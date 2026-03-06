@@ -852,49 +852,55 @@ function ClientDetail({ client, onClose, onEdit, onRefresh }) {
 
 // ── Clients Screen ────────────────────────────────────────────────────────────
 function ClientsScreen({ onToast }) {
-  const [clients,   setClients]   = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [filterStatus, setFS]     = useState('');
-  const [filterType,   setFT]     = useState('');
-  const [filterTier,   setFTier]  = useState('');
-  const [search,       setSearch] = useState('');
-  const [sel,       setSel]       = useState(null);
-  const [editing,   setEditing]   = useState(null);  // null | {} | {existing client}
-  const [showModal, setShowModal] = useState(false);
-  const [skuMap,    setSkuMap]    = useState({});  // clientId -> Set of product_ids
-  const [visitMap,  setVisitMap]  = useState({});  // clientId -> last visit date
+  const [clients,      setClients]   = useState([]);
+  const [loading,      setLoading]   = useState(false);
+  const [filterStatus, setFS]        = useState('');
+  const [filterType,   setFT]        = useState('');
+  const [filterTier,   setFTier]     = useState('');
+  const [search,       setSearch]    = useState('');
+  const [sel,          setSel]       = useState(null);
+  const [editing,      setEditing]   = useState(null);
+  const [showModal,    setShowModal] = useState(false);
+  const [skuMap,       setSkuMap]    = useState({});
+  const [visitMap,     setVisitMap]  = useState({});
+  const searchTimer = useRef(null);
 
-  const fetchAll = async (table, query) => {
-    const PAGE = 1000;
-    let from = 0, all = [];
-    while (true) {
-      const { data, error } = await query(sb.from(table)).range(from, from + PAGE - 1);
-      if (error) return { data: all, error };
-      all = all.concat(data || []);
-      if ((data || []).length < PAGE) break;
-      from += PAGE;
-    }
-    return { data: all, error: null };
-  };
-
-  const load = async () => {
+  const query = async (term, status, type, tier) => {
+    if (!term && !status && !type && !tier) { setClients([]); return; }
     setLoading(true);
 
-    // 1. Load ALL clients via RPC function (bypasses Supabase 1000-row API limit)
-    const { data: clientData, error: clientErr } = await sb.rpc('get_all_clients');
-    if (clientErr) { onToast('Error loading clients: ' + clientErr.message); setLoading(false); return; }
+    // Build client query with all active filters
+    let q = sb.from('clients').select('*').order('company_name').limit(10);
+    if (term) {
+      q = q.or(`company_name.ilike.*${term}*,contact_name.ilike.*${term}*,email.ilike.*${term}*,phone.ilike.*${term}*`);
+    }
+    if (status) q = q.eq('status', status);
+    if (type)   q = q.eq('company_type', type);
+    if (tier)   q = q.eq('value_tier', tier);
 
-    // 2. Load recaps to derive last visit per client
-    const { data: recapData } = await fetchAll('recaps',
-      q => q.select('client_id, visit_date').order('visit_date', { ascending: false }));
+    const { data: clientData, error } = await q;
+    if (error) { onToast('Error: ' + error.message); setLoading(false); return; }
+
+    const results = clientData || [];
+    if (results.length === 0) { setClients([]); setLoading(false); return; }
+
+    // Fetch last visit + SKU counts only for the returned clients
+    const ids = results.map(c => `"${c.id}"`).join(',');
+
+    const [{ data: recapData }, { data: shownData }] = await Promise.all([
+      sb.from('recaps').select('client_id, visit_date')
+        .in('client_id', results.map(c => c.id))
+        .order('visit_date', { ascending: false }),
+      sb.from('recap_products_shown')
+        .select('product_id, recaps!inner(client_id)')
+        .filter('recaps.client_id', 'in', `(${results.map(c => c.id).join(',')})`),
+    ]);
+
     const vMap = {};
     (recapData || []).forEach(r => {
       if (r.client_id && !vMap[r.client_id]) vMap[r.client_id] = r.visit_date;
     });
 
-    // 3. Load recap_products_shown via recaps to count unique SKUs per client
-    const { data: shownData } = await fetchAll('recap_products_shown',
-      q => q.select('product_id, recaps(client_id)'));
     const sMap = {};
     (shownData || []).forEach(r => {
       const cid = r.recaps?.client_id;
@@ -903,27 +909,29 @@ function ClientsScreen({ onToast }) {
       sMap[cid].add(r.product_id);
     });
 
-    setClients(clientData || []);
+    setClients(results);
     setVisitMap(vMap);
     setSkuMap(sMap);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  // Debounced search — fires 300ms after last keystroke
+  const handleSearch = (val) => {
+    setSearch(val);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => query(val, filterStatus, filterType, filterTier), 300);
+  };
 
-  const filtered = clients.filter(c => {
-    if (filterStatus && c.status !== filterStatus) return false;
-    if (filterType   && c.company_type !== filterType) return false;
-    if (filterTier   && c.value_tier !== filterTier) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (!c.company_name?.toLowerCase().includes(q) &&
-          !c.contact_name?.toLowerCase().includes(q) &&
-          !c.email?.toLowerCase().includes(q) &&
-          !c.phone?.toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
+  // Filters re-run immediately
+  const handleFilter = (key, val) => {
+    const next = { status: filterStatus, type: filterType, tier: filterTier, [key]: val };
+    if (key === 'status') setFS(val);
+    if (key === 'type')   setFT(val);
+    if (key === 'tier')   setFTier(val);
+    query(search, next.status, next.type, next.tier);
+  };
+
+  const load = () => query(search, filterStatus, filterType, filterTier);
 
   const lastVisit = (c) => visitMap[c.id] || null;
   const skuCount  = (c) => skuMap[c.id]?.size || 0;
@@ -934,11 +942,7 @@ function ClientsScreen({ onToast }) {
     return 'badge-status-prospective';
   };
 
-  const handleSaved = () => {
-    setShowModal(false); setEditing(null);
-    load();
-    onToast('Client saved ✓');
-  };
+  const handleSaved = () => { setShowModal(false); setEditing(null); load(); onToast('Client saved ✓'); };
 
   const deleteClient = async (c) => {
     if (!confirm(`Delete "${c.company_name}"? This cannot be undone.`)) return;
@@ -956,26 +960,37 @@ function ClientsScreen({ onToast }) {
 
       <div style={{ display:'flex', gap:'.5rem', flexWrap:'wrap', marginBottom:'1rem', alignItems:'center' }}>
         <div className="search-wrap" style={{ flex: '1 1 200px', minWidth: '160px' }}>
-          <input className="form-control" placeholder="Search company, contact, email…" value={search} onChange={e => setSearch(e.target.value)}
+          <input className="form-control" placeholder="Type to search clients…" value={search}
+            onChange={e => handleSearch(e.target.value)}
             style={{ padding:'.4rem .75rem', fontSize:'.82rem' }} />
         </div>
         <div className="filter-bar" style={{ margin:0, flex:'0 0 auto' }}>
-          <select value={filterStatus} onChange={e => setFS(e.target.value)}>
+          <select value={filterStatus} onChange={e => handleFilter('status', e.target.value)}>
             <option value="">All Statuses</option>
             <option>Active</option><option>Former</option><option>Prospective</option>
           </select>
-          <select value={filterType} onChange={e => setFT(e.target.value)}>
+          <select value={filterType} onChange={e => handleFilter('type', e.target.value)}>
             <option value="">All Types</option>
             <option>On-Premise</option><option>Off-Premise</option><option>Retail</option><option>Chain</option><option>Other</option>
           </select>
-          <select value={filterTier} onChange={e => setFTier(e.target.value)}>
+          <select value={filterTier} onChange={e => handleFilter('tier', e.target.value)}>
             <option value="">All Tiers</option>
             <option>$</option><option>$$</option><option>$$$</option><option>$$$$</option>
           </select>
         </div>
       </div>
 
-      {loading ? <div className="loading">Loading clients…</div> : (
+      {!loading && clients.length === 0 && (
+        <div className="empty" style={{ marginTop:'3rem' }}>
+          {search || filterStatus || filterType || filterTier
+            ? 'No clients match your search.'
+            : 'Type a name above to search your clients.'}
+        </div>
+      )}
+
+      {loading && <div className="loading">Searching…</div>}
+
+      {!loading && clients.length > 0 && (
         <div className="tbl-wrap">
           <table>
             <thead>
@@ -990,18 +1005,13 @@ function ClientsScreen({ onToast }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
-                <tr><td colSpan={7} style={{ textAlign:'center', color:'#8a7a64', fontStyle:'italic', padding:'2rem' }}>No clients match filters.</td></tr>
-              )}
-              {filtered.map(c => {
+              {clients.map(c => {
                 const lv = lastVisit(c);
                 const ds = daysSince(lv);
                 const stale = ds !== null && ds > 14;
                 return (
                   <tr key={c.id} onClick={() => setSel(c)}>
-                    <td>
-                      <div className="cell-primary">{c.company_name}</div>
-                    </td>
+                    <td><div className="cell-primary">{c.company_name}</div></td>
                     <td><span className="tag">{c.company_type}</span></td>
                     <td><span className={`badge ${statusClass(c.status)}`}>{c.status}</span></td>
                     <td>{c.value_tier ? <span className="badge badge-tier">{c.value_tier}</span> : '—'}</td>
@@ -1012,7 +1022,7 @@ function ClientsScreen({ onToast }) {
                     <td style={{ textAlign:'center' }}>{skuCount(c) || '—'}</td>
                     <td>
                       {stale && <span className="stale-dot" title="No visit in 14+ days" />}
-                      <span style={{ fontSize:'.82rem', color: stale ? 'var(--wine)' : 'inherit' }}>{lv ? lv : '—'}</span>
+                      <span style={{ fontSize:'.82rem', color: stale ? 'var(--wine)' : 'inherit' }}>{lv || '—'}</span>
                       {stale && <div className="cell-sub">{ds}d ago</div>}
                     </td>
                   </tr>
@@ -1020,6 +1030,11 @@ function ClientsScreen({ onToast }) {
               })}
             </tbody>
           </table>
+          {clients.length === 10 && (
+            <div style={{ padding:'.6rem 1rem', fontSize:'.75rem', color:'#8a7a64', borderTop:'1px solid var(--mist)', textAlign:'center' }}>
+              Showing top 10 results — refine your search to narrow further
+            </div>
+          )}
         </div>
       )}
 
