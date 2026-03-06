@@ -880,9 +880,8 @@ function ClientsScreen({ onToast }) {
   const load = async () => {
     setLoading(true);
 
-    // 1. Load ALL clients in batches to bypass Supabase's default 1000-row cap
-    const { data: clientData, error: clientErr } = await fetchAll('clients',
-      q => q.select('*').order('company_name'));
+    // 1. Load ALL clients via RPC function (bypasses Supabase 1000-row API limit)
+    const { data: clientData, error: clientErr } = await sb.rpc('get_all_clients');
     if (clientErr) { onToast('Error loading clients: ' + clientErr.message); setLoading(false); return; }
 
     // 2. Load recaps to derive last visit per client
