@@ -194,12 +194,12 @@
 <body>
 <div id="root"><div class="loading" style="padding-top:3rem;">Loading Pour Advice…</div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 
-<script type="text/babel">
+<script type="text/babel" data-presets="react,env">
 const { useState, useEffect, useRef } = React;
 
 const sb = supabase.createClient(
