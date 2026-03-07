@@ -157,6 +157,15 @@
     .buyer-meta { font-size: .75rem; color: #8a7a64; }
     .stale-badge { font-size: .68rem; background: #fde8e8; color: var(--wine); border-radius: 20px; padding: .1rem .5rem; font-weight: 500; white-space: nowrap; }
 
+    /* ── Pagination ────────────────────────────────────────── */
+    .pagination { display: flex; align-items: center; justify-content: space-between; padding: .6rem 1rem; border-top: 1px solid var(--mist); background: var(--parchment); border-radius: 0 0 8px 8px; }
+    .pagination-info { font-size: .75rem; color: #8a7a64; }
+    .pagination-btns { display: flex; gap: .4rem; align-items: center; }
+    .pg-btn { padding: .3rem .7rem; border: 1px solid var(--mist); border-radius: 4px; background: #fff; font-size: .78rem; font-family: 'DM Sans', sans-serif; cursor: pointer; color: var(--ink); transition: all .15s; }
+    .pg-btn:hover:not(:disabled) { border-color: var(--gold); background: var(--parchment); }
+    .pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .pg-btn.active { background: var(--wine); color: #fff; border-color: var(--wine); }
+
     /* ── Phase 4: Products ─────────────────────────────────── */
     .conv-bar { display: flex; align-items: center; gap: .3rem; }
     .conv-fill { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--wine), var(--gold)); min-width: 2px; transition: width .3s; }
@@ -888,8 +897,11 @@ function ClientDetail({ client, onClose, onEdit, onRefresh }) {
 
 // ── Clients Screen ────────────────────────────────────────────────────────────
 function ClientsScreen({ onToast }) {
+  const PAGE_SIZE = 50;
   const [clients,      setClients]   = useState([]);
   const [loading,      setLoading]   = useState(false);
+  const [totalCount,   setTotal]     = useState(0);
+  const [page,         setPage]      = useState(0);
   const [filterStatus, setFS]        = useState('');
   const [filterType,   setFT]        = useState('');
   const [filterTier,   setFTier]     = useState('');
@@ -901,50 +913,32 @@ function ClientsScreen({ onToast }) {
   const [visitMap,     setVisitMap]  = useState({});
   const searchTimer = useRef(null);
   const stateRef = useRef({});
-  stateRef.current = { search, filterStatus, filterType, filterTier };
+  stateRef.current = { search, filterStatus, filterType, filterTier, page };
 
-  // Debounced search — fires 300ms after last keystroke
-  const handleSearch = (val) => {
-    setSearch(val);
-    clearTimeout(searchTimer.current);
-    const { filterStatus: status, filterType: type, filterTier: tier } = stateRef.current;
-    searchTimer.current = setTimeout(() => query(val, status, type, tier), 300);
-  };
-
-  // Filters re-run immediately with latest search term
-  const handleFilter = (key, val) => {
-    const next = { ...stateRef.current, [key === 'status' ? 'filterStatus' : key === 'type' ? 'filterType' : 'filterTier']: val };
-    if (key === 'status') setFS(val);
-    if (key === 'type')   setFT(val);
-    if (key === 'tier')   setFTier(val);
-    clearTimeout(searchTimer.current);
-    query(next.search, next.filterStatus, next.filterType, next.filterTier);
-  };
-  const load = () => {
-    const { search: term, filterStatus: status, filterType: type, filterTier: tier } = stateRef.current;
-    query(term, status, type, tier);
-  };
-
-  const query = async (term, status, type, tier) => {
-    if (!term && !status && !type && !tier) { setClients([]); return; }
+  const query = async (term, status, type, tier, pg = 0) => {
     setLoading(true);
+    const from = pg * PAGE_SIZE;
+    const to   = from + PAGE_SIZE - 1;
 
-    // Build client query with all active filters
-    let q = sb.from('clients').select('*').order('company_name').limit(10);
-    if (term) {
-      q = q.or(`company_name.ilike.*${term}*,contact_name.ilike.*${term}*,email.ilike.*${term}*,phone.ilike.*${term}*`);
-    }
+    // Build query — always runs, blank = browse all
+    let q = sb.from('clients')
+      .select('*', { count: 'exact' })
+      .order('company_name')
+      .range(from, to);
+    if (term)   q = q.or(`company_name.ilike.*${term}*,contact_name.ilike.*${term}*,email.ilike.*${term}*,phone.ilike.*${term}*`);
     if (status) q = q.eq('status', status);
     if (type)   q = q.eq('company_type', type);
     if (tier)   q = q.eq('value_tier', tier);
 
-    const { data: clientData, error } = await q;
+    const { data: clientData, error, count } = await q;
     if (error) { onToast('Error: ' + error.message); setLoading(false); return; }
 
     const results = clientData || [];
+    setTotal(count || 0);
+
     if (results.length === 0) { setClients([]); setLoading(false); return; }
 
-    // Fetch last visit + SKU counts only for the returned clients
+    // Fetch last visit + SKU counts for just this page's clients
     const clientIds = results.map(c => c.id);
 
     const [{ data: recapData }, { data: recapIdData }] = await Promise.all([
@@ -955,7 +949,6 @@ function ClientsScreen({ onToast }) {
         .in('client_id', clientIds),
     ]);
 
-    // Use recap IDs to look up products shown — avoids unreliable join filtering
     const recapIds = (recapIdData || []).map(r => r.id);
     const recapClientMap = {};
     (recapIdData || []).forEach(r => { recapClientMap[r.id] = r.client_id; });
@@ -983,14 +976,48 @@ function ClientsScreen({ onToast }) {
     setLoading(false);
   };
 
-  const lastVisit = (c) => visitMap[c.id] || null;
-  const skuCount  = (c) => skuMap[c.id]?.size || 0;
+  // On mount — load page 0 with no filters
+  useEffect(() => { query('', '', '', '', 0); }, []);
 
-  const statusClass = (s) => {
-    if (s === 'Active') return 'badge-status-active';
-    if (s === 'Former') return 'badge-status-former';
-    return 'badge-status-prospective';
+  // Debounced search — resets to page 0
+  const handleSearch = (val) => {
+    setSearch(val);
+    setPage(0);
+    clearTimeout(searchTimer.current);
+    const { filterStatus: status, filterType: type, filterTier: tier } = stateRef.current;
+    searchTimer.current = setTimeout(() => query(val, status, type, tier, 0), 300);
   };
+
+  // Filter change — resets to page 0
+  const handleFilter = (key, val) => {
+    const next = {
+      ...stateRef.current,
+      [key === 'status' ? 'filterStatus' : key === 'type' ? 'filterType' : 'filterTier']: val,
+    };
+    if (key === 'status') setFS(val);
+    if (key === 'type')   setFT(val);
+    if (key === 'tier')   setFTier(val);
+    setPage(0);
+    clearTimeout(searchTimer.current);
+    query(next.search, next.filterStatus, next.filterType, next.filterTier, 0);
+  };
+
+  // Page navigation
+  const goTo = (pg) => {
+    setPage(pg);
+    const { search: term, filterStatus: status, filterType: type, filterTier: tier } = stateRef.current;
+    query(term, status, type, tier, pg);
+  };
+
+  const load = () => {
+    const { search: term, filterStatus: status, filterType: type, filterTier: tier, page: pg } = stateRef.current;
+    query(term, status, type, tier, pg);
+  };
+
+  const totalPages  = Math.ceil(totalCount / PAGE_SIZE);
+  const lastVisit   = (c) => visitMap[c.id] || null;
+  const skuCount    = (c) => skuMap[c.id]?.size || 0;
+  const statusClass = (s) => s === 'Active' ? 'badge-status-active' : s === 'Former' ? 'badge-status-former' : 'badge-status-prospective';
 
   const handleSaved = () => { setShowModal(false); setEditing(null); load(); onToast('Client saved ✓'); };
 
@@ -999,6 +1026,16 @@ function ClientsScreen({ onToast }) {
     const { error } = await sb.from('clients').delete().eq('id', c.id);
     if (error) { onToast('Error: ' + error.message); return; }
     setSel(null); load(); onToast('Client deleted.');
+  };
+
+  // Build page number buttons — show up to 7 around current page
+  const pageButtons = () => {
+    if (totalPages <= 1) return [];
+    const buttons = [];
+    const start = Math.max(0, Math.min(page - 3, totalPages - 7));
+    const end   = Math.min(totalPages - 1, start + 6);
+    for (let i = start; i <= end; i++) buttons.push(i);
+    return buttons;
   };
 
   return (
@@ -1010,7 +1047,7 @@ function ClientsScreen({ onToast }) {
 
       <div style={{ display:'flex', gap:'.5rem', flexWrap:'wrap', marginBottom:'1rem', alignItems:'center' }}>
         <div className="search-wrap" style={{ flex: '1 1 200px', minWidth: '160px' }}>
-          <input className="form-control" placeholder="Type to search clients…" value={search}
+          <input className="form-control" placeholder="Search company, contact, email…" value={search}
             onChange={e => handleSearch(e.target.value)}
             style={{ padding:'.4rem .75rem', fontSize:'.82rem' }} />
         </div>
@@ -1030,15 +1067,11 @@ function ClientsScreen({ onToast }) {
         </div>
       </div>
 
-      {!loading && clients.length === 0 && (
-        <div className="empty" style={{ marginTop:'3rem' }}>
-          {search || filterStatus || filterType || filterTier
-            ? 'No clients match your search.'
-            : 'Type a name above to search your clients.'}
-        </div>
-      )}
+      {loading && <div className="loading">Loading clients…</div>}
 
-      {loading && <div className="loading">Searching…</div>}
+      {!loading && clients.length === 0 && (
+        <div className="empty" style={{ marginTop:'3rem' }}>No clients match your search.</div>
+      )}
 
       {!loading && clients.length > 0 && (
         <div className="tbl-wrap">
@@ -1080,11 +1113,22 @@ function ClientsScreen({ onToast }) {
               })}
             </tbody>
           </table>
-          {clients.length === 10 && (
-            <div style={{ padding:'.6rem 1rem', fontSize:'.75rem', color:'#8a7a64', borderTop:'1px solid var(--mist)', textAlign:'center' }}>
-              Showing top 10 results — refine your search to narrow further
+          <div className="pagination">
+            <div className="pagination-info">
+              {totalCount > 0
+                ? `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, totalCount)} of ${totalCount.toLocaleString()} clients`
+                : ''}
             </div>
-          )}
+            <div className="pagination-btns">
+              <button className="pg-btn" onClick={() => goTo(0)}        disabled={page === 0}>«</button>
+              <button className="pg-btn" onClick={() => goTo(page - 1)} disabled={page === 0}>‹</button>
+              {pageButtons().map(i => (
+                <button key={i} className={`pg-btn ${i === page ? 'active' : ''}`} onClick={() => goTo(i)}>{i + 1}</button>
+              ))}
+              <button className="pg-btn" onClick={() => goTo(page + 1)} disabled={page >= totalPages - 1}>›</button>
+              <button className="pg-btn" onClick={() => goTo(totalPages - 1)} disabled={page >= totalPages - 1}>»</button>
+            </div>
+          </div>
         </div>
       )}
 
