@@ -2145,7 +2145,7 @@ function BuyersScreen({ onToast }) {
 const PRODUCT_BLANK = {
   sku_number: '', type: 'Wine', brand_name: '', wine_name: '',
   supplier_id: '', distributor: '', country: '', region: '',
-  appellation: '', varietals: '', laid_in_cost: '', wholesale_cost: '',
+  appellation: '', varietals: '', btg_3cs_cost: '', frontline: '',
   is_active: true, target_account_types: [],
 };
 
@@ -2196,8 +2196,8 @@ function ProductModal({ initial, suppliers, onSave, onClose }) {
       region: f.region || null,
       appellation: f.appellation || null,
       varietals: varietalArr.length ? varietalArr : null,
-      laid_in_cost: f.laid_in_cost !== '' ? parseFloat(f.laid_in_cost) : null,
-      wholesale_cost: f.wholesale_cost !== '' ? parseFloat(f.wholesale_cost) : null,
+      btg_3cs_cost: f.btg_3cs_cost !== '' ? parseFloat(f.btg_3cs_cost) : null,
+      frontline: f.frontline !== '' ? parseFloat(f.frontline) : null,
       is_active: f.is_active,
       target_account_types: f.target_account_types.length ? f.target_account_types : null,
     };
@@ -2277,12 +2277,12 @@ function ProductModal({ initial, suppliers, onSave, onClose }) {
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Laid-In Cost ($)</label>
-              <input className="form-control" type="number" step="0.01" value={f.laid_in_cost} onChange={e => sf('laid_in_cost', e.target.value)} />
+              <label className="form-label">BTG/3cs Cost ($)</label>
+              <input className="form-control" type="number" step="0.01" value={f.btg_3cs_cost} onChange={e => sf('btg_3cs_cost', e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="form-label">Wholesale Cost ($)</label>
-              <input className="form-control" type="number" step="0.01" value={f.wholesale_cost} onChange={e => sf('wholesale_cost', e.target.value)} />
+              <label className="form-label">Frontline ($)</label>
+              <input className="form-control" type="number" step="0.01" value={f.frontline} onChange={e => sf('frontline', e.target.value)} />
             </div>
           </div>
           <div className="form-group">
@@ -2327,7 +2327,7 @@ function CsvImportModal({ onDone, onClose }) {
   const [result,  setResult]  = useState(null);
   const fileRef = useRef();
 
-  const EXPECTED = ['sku_number','type','brand_name','wine_name','country','region','wholesale_cost'];
+  const EXPECTED = ['sku_number','type','brand_name','wine_name','country','region','frontline'];
 
   const parseFile = (file) => {
     const reader = new FileReader();
@@ -2367,7 +2367,7 @@ function CsvImportModal({ onDone, onClose }) {
       wine_name: r.wine_name || null,
       country: r.country || null,
       region: r.region || null,
-      wholesale_cost: r.wholesale_cost ? parseFloat(r.wholesale_cost) : null,
+      frontline: r.frontline ? parseFloat(r.frontline) : null,
       is_active: true,
     })).filter(p => p.sku_number && p.brand_name);
 
@@ -2535,8 +2535,8 @@ function ProductDetail({ product, suppliers, onClose, onEdit, convRates }) {
             <div><div className="form-label">Region</div><div className="field-val">{product.region || '—'}</div></div>
             <div><div className="form-label">Appellation</div><div className="field-val">{product.appellation || '—'}</div></div>
             <div><div className="form-label">Varietals</div><div className="field-val">{Array.isArray(product.varietals) ? product.varietals.join(', ') : (product.varietals || '—')}</div></div>
-            <div><div className="form-label">Laid-In Cost</div><div className="field-val">{product.laid_in_cost != null ? `$${Number(product.laid_in_cost).toFixed(2)}` : '—'}</div></div>
-            <div><div className="form-label">Wholesale Cost</div><div className="field-val">{product.wholesale_cost != null ? `$${Number(product.wholesale_cost).toFixed(2)}` : '—'}</div></div>
+            <div><div className="form-label">BTG/3cs Cost</div><div className="field-val">{product.btg_3cs_cost != null ? `$${Number(product.btg_3cs_cost).toFixed(2)}` : '—'}</div></div>
+            <div><div className="form-label">Frontline</div><div className="field-val">{product.frontline != null ? `$${Number(product.frontline).toFixed(2)}` : '—'}</div></div>
           </div>
 
           {/* Tabs */}
@@ -2778,7 +2778,7 @@ function ProductsScreen({ onToast, deepProduct, onDeepProductClear }) {
                       <div style={{ fontSize:'.82rem' }}>{p.country || '—'}</div>
                       {p.region && <div className="cell-sub">{p.region}</div>}
                     </td>
-                    <td style={{ fontSize:'.82rem' }}>{p.wholesale_cost != null ? `$${Number(p.wholesale_cost).toFixed(2)}` : '—'}</td>
+                    <td style={{ fontSize:'.82rem' }}>{p.frontline != null ? `$${Number(p.frontline).toFixed(2)}` : '—'}</td>
                     <td style={{ textAlign:'center', fontSize:'.82rem', color: cr.times_shown > 0 ? 'var(--ink)' : '#aaa' }}>{cr.times_shown || '—'}</td>
                     <td style={{ minWidth:'120px' }}><ConvBar rate={cr.rate} /></td>
                   </tr>
@@ -3680,7 +3680,7 @@ function ReportRevenueByClient({ dateFrom, onToast }) {
       let shown = [];
       if (recapIds.length > 0) {
         const { data: shownData, error: e2 } = await sb.from('recap_products_shown')
-          .select('recap_id, feedback, cases, products(wholesale_cost)')
+          .select('recap_id, feedback, cases, products(frontline)')
           .in('recap_id', recapIds)
           .eq('feedback', 'yes_today');
         if (e2) { onToast('Error: ' + e2.message); setLoading(false); return; }
@@ -3704,7 +3704,7 @@ function ReportRevenueByClient({ dateFrom, onToast }) {
         const k = recap.client_id || '(unknown)';
         if (!map[k]) map[k] = { client: recap.clients?.company_name || k, visits: 0, value_tier: '', commission_pct: parseFloat(recap.clients?.commission_pct) || 0, orders: 0, est_revenue: 0 };
         map[k].orders++;
-        const cost = parseFloat(s.products?.wholesale_cost) || 0;
+        const cost = parseFloat(s.products?.frontline) || 0;
         const cases = parseInt(s.cases) || 1;
         map[k].est_revenue += cost * cases * (map[k].commission_pct / 100);
       });
