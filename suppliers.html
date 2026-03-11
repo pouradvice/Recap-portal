@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Our Producers — Pour Advice</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ── Reset ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    body, h1, h2, h3, h4, p { margin: 0; padding: 0; }
+
+    /* ── Design Tokens ───────────────────────────────────── */
+    :root {
+      --ink:        #0a0a0a;
+      --parchment:  #f0f0f0;
+      --cream:      #fafafa;
+      --wine:       #111111;
+      --wine-light: #333333;
+      --gold:       #555555;
+      --gold-light: #e0e0e0;
+      --sage:       #777777;
+      --mist:       #d8d8d8;
+      --shadow:     rgba(0,0,0,0.10);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* ── Page Header ─────────────────────────────────────── */
+    .page-header {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      border-bottom: 1.5px solid var(--mist);
+      box-shadow: 0 1px 6px var(--shadow);
+      height: 60px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+    }
+
+    .brand-wordmark {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+
+    .brand-tagline {
+      font-style: italic;
+      font-size: 0.7rem;
+      color: rgba(0,0,0,0.4);
+    }
+
+    /* ── Buttons ─────────────────────────────────────────── */
+    .btn {
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      border: none;
+      padding: .55rem 1.1rem;
+      border-radius: 4px;
+      font-size: .82rem;
+      font-weight: 600;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      transition: background .2s;
+    }
+
+    .btn-primary {
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--wine-light);
+    }
+
+    .btn-back {
+      background: var(--parchment);
+      color: var(--ink);
+      border: 1px solid var(--mist);
+      border-radius: 5px;
+      padding: .4rem .75rem;
+      font-size: .78rem;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background .2s;
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 400;
+    }
+
+    .btn-back:hover {
+      background: var(--mist);
+    }
+
+    .btn-cancel {
+      background: var(--parchment);
+      color: var(--ink);
+      border: 1px solid var(--mist);
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 400;
+    }
+
+    .btn-cancel:hover {
+      background: var(--mist);
+    }
+
+    /* ── Card ────────────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border: 1px solid var(--mist);
+      border-radius: 8px;
+      box-shadow: 0 1px 4px var(--shadow);
+    }
+
+    /* ── Supplier Card ───────────────────────────────────── */
+    .supplier-card {
+      cursor: pointer;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .supplier-card:hover {
+      border-color: var(--gold);
+      box-shadow: 0 4px 16px var(--shadow);
+    }
+
+    .card-logo-area {
+      height: 160px;
+      background: var(--parchment);
+      border-radius: 8px 8px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-logo-img {
+      max-height: 100px;
+      max-width: 80%;
+      object-fit: contain;
+    }
+
+    .card-logo-initials {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--mist);
+    }
+
+    .card-body {
+      padding: 1rem 1.1rem 1.25rem;
+    }
+
+    .card-supplier-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: .2rem;
+    }
+
+    .card-region-line {
+      font-size: .78rem;
+      color: #8a7a64;
+      font-style: italic;
+      margin-bottom: .4rem;
+    }
+
+    .card-view-link {
+      display: inline-block;
+      font-size: .78rem;
+      font-weight: 500;
+      color: var(--wine);
+      text-decoration: none;
+      margin-top: .75rem;
+    }
+
+    /* ── Tag ─────────────────────────────────────────────── */
+    .tag {
+      display: inline-block;
+      padding: .15rem .5rem;
+      background: var(--parchment);
+      border: 1px solid var(--mist);
+      border-radius: 3px;
+      font-size: .72rem;
+      color: #6b5d4a;
+      margin: .15rem;
+    }
+
+    .tag-sku {
+      font-family: monospace;
+      flex-shrink: 0;
+    }
+
+    /* ── Sort Bar ────────────────────────────────────────── */
+    .sort-bar {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .sort-pill {
+      background: var(--parchment);
+      color: var(--gold);
+      border: 1px solid var(--mist);
+      border-radius: 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .78rem;
+      padding: .35rem .9rem;
+      cursor: pointer;
+      transition: background .2s, color .2s, border-color .2s;
+    }
+
+    .sort-pill.active {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+
+    /* ── Page Section ────────────────────────────────────── */
+    .page-section {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--ink);
+      margin-bottom: .35rem;
+    }
+
+    .section-subhead {
+      font-style: italic;
+      font-size: .9rem;
+      color: #8a7a64;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── Supplier Grid ───────────────────────────────────── */
+    .supplier-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.75rem;
+    }
+
+    @media (max-width: 900px) {
+      .supplier-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 580px) {
+      .supplier-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── State Messages ──────────────────────────────────── */
+    .state-msg {
+      text-align: center;
+      font-style: italic;
+      color: #8a7a64;
+      padding: 2.5rem 0;
+    }
+
+    /* ── Profile Page ────────────────────────────────────── */
+    .profile-page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem;
+    }
+
+    .profile-hero {
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-logo-img {
+      max-height: 80px;
+      display: block;
+      margin-bottom: 1rem;
+    }
+
+    .profile-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .profile-region {
+      font-style: italic;
+      font-size: .9rem;
+      color: #8a7a64;
+      margin-top: .25rem;
+      margin-bottom: 1rem;
+    }
+
+    .profile-divider {
+      border: none;
+      border-top: 1px solid var(--mist);
+      margin: 1rem 0;
+    }
+
+    .profile-about {
+      font-size: .92rem;
+      line-height: 1.65;
+      color: var(--ink);
+    }
+
+    /* ── SKU Accordion ───────────────────────────────────── */
+    .sku-accordion-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      color: var(--ink);
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: .5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ── SKU Row ─────────────────────────────────────────── */
+    .sku-row {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .7rem .9rem;
+      border: 1px solid var(--mist);
+      border-radius: 6px;
+      margin-bottom: .5rem;
+      background: var(--cream);
+      cursor: pointer;
+      transition: border-color .2s, background .15s;
+    }
+
+    .sku-row:hover {
+      border-color: var(--gold);
+      background: #fff;
+    }
+
+    .sku-chevron {
+      font-size: .7rem;
+      color: var(--gold);
+      min-width: 1rem;
+      flex-shrink: 0;
+    }
+
+    .sku-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sku-name {
+      font-weight: 500;
+      font-size: .88rem;
+      color: var(--ink);
+    }
+
+    .sku-sub {
+      font-size: .75rem;
+      color: #8a7a64;
+      margin-top: .1rem;
+    }
+
+    .sku-tasting-btn {
+      padding: .35rem .75rem;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .75rem;
+      font-weight: 500;
+      cursor: pointer;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity .15s, background .2s;
+      white-space: nowrap;
+    }
+
+    .sku-row:hover .sku-tasting-btn {
+      opacity: 1;
+    }
+
+    .sku-tasting-btn:hover {
+      background: var(--wine-light);
+    }
+
+    @media (max-width: 600px) {
+      .sku-tasting-btn { opacity: 1 !important; }
+    }
+
+    /* ── SKU Detail Panel ────────────────────────────────── */
+    .sku-detail-panel {
+      padding: .85rem 1rem 1rem 2.25rem;
+      background: #fff;
+      border: 1px solid var(--mist);
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      margin-top: -6px;
+      margin-bottom: .5rem;
+    }
+
+    /* ── Field Layout ────────────────────────────────────── */
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .75rem;
+      margin-bottom: .75rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: .72rem;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #7a6a54;
+      margin-bottom: .35rem;
+    }
+
+    .field-val {
+      font-size: .88rem;
+      color: var(--ink);
+      padding: .5rem .75rem;
+      background: var(--cream);
+      border-radius: 4px;
+      border: 1px solid var(--mist);
+    }
+
+    .tech-sheet-link {
+      display: inline-block;
+      font-size: .8rem;
+      color: var(--wine);
+      text-decoration: none;
+      font-weight: 500;
+      margin-top: .5rem;
+      margin-bottom: .75rem;
+    }
+
+    .tech-sheet-link:hover {
+      text-decoration: underline;
+    }
+
+    .btn-panel-tasting {
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    /* ── Form Elements ───────────────────────────────────── */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-control {
+      display: block;
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .88rem;
+      color: var(--ink);
+      background: var(--cream);
+      border: 1px solid var(--mist);
+      border-radius: 4px;
+      padding: .5rem .75rem;
+      transition: border-color .2s;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: var(--gold);
+    }
+
+    .form-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .error-msg {
+      font-size: .75rem;
+      color: #c0392b;
+      margin-top: .25rem;
+    }
+
+    /* ── Modal ───────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,20,9,.5);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 10px;
+      width: min(520px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 40px rgba(0,0,0,.25);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--mist);
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 1;
+    }
+
+    .modal-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin: 0;
+    }
+
+    .modal-close-btn {
+      color: #8a7a64;
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 .25rem;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--mist);
+      display: flex;
+      justify-content: flex-end;
+      gap: .75rem;
+    }
+
+    @media (max-width: 600px) {
+      .modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+      }
+      .modal {
+        width: 100%;
+        border-radius: 10px 10px 0 0;
+        max-height: 92vh;
+      }
+    }
+
+    /* ── Toast ───────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink);
+      color: var(--gold-light);
+      padding: .7rem 1.5rem;
+      border-radius: 30px;
+      font-size: .85rem;
+      z-index: 999;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* ── Footer ──────────────────────────────────────────── */
+    .page-footer {
+      padding: 2.5rem 1.25rem;
+      text-align: center;
+      border-top: 1px solid var(--mist);
+      margin-top: 3rem;
+    }
+
+    .footer-brand {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1rem;
+      color: #8a7a64;
+    }
+
+    .footer-copy {
+      font-size: .75rem;
+      color: #aaa;
+      margin-top: .35rem;
+    }
+
+    /* ── Header CTA responsive ───────────────────────────── */
+    .header-cta-short { display: none; }
+
+    @media (max-width: 400px) {
+      .header-cta-label { display: none; }
+      .header-cta-short { display: inline; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react,env">
+    const { useState, useEffect, useRef } = React;
+
+    // ── Supabase ────────────────────────────────────────────
+    const { createClient } = supabase;
+    const db = createClient(
+      'https://zuvsurnuyeqbgcwandwq.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1dnN1cm51eWVxYmdjd2FuZHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzA1NDQsImV4cCI6MjA4ODE0NjU0NH0.WFn83S-vrG8zLXLke6v5lz_hlX85KN5aD17RLaze8Hc'
+    );
+
+    // ── Helpers ─────────────────────────────────────────────
+    function getInitials(name) {
+      return (name || '')
+        .split(' ')
+        .map(w => w[0] || '')
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
+    }
+
+    function formatCost(cost) {
+      if (cost == null) return null;
+      return '$' + Number(cost).toFixed(2);
+    }
+
+    function buildProductLabel(sku) {
+      return [sku.brand_name, sku.wine_name].filter(Boolean).join(' ');
+    }
+
+    // ── PageHeader ──────────────────────────────────────────
+    function PageHeader({ onTastingClick }) {
+      return (
+        <header className="page-header">
+          <div>
+            <div className="brand-wordmark">Pour Advice</div>
+            <div className="brand-tagline">Curated Wine &amp; Beverage Portfolio</div>
+          </div>
+          <button className="btn btn-primary" onClick={onTastingClick}>
+            <span className="header-cta-label">Schedule a Tasting</span>
+            <span className="header-cta-short">Tasting</span>
+          </button>
+        </header>
+      );
+    }
+
+    // ── SortBar ─────────────────────────────────────────────
+    function SortBar({ sortMode, setSortMode }) {
+      const options = [
+        { label: 'All',       value: 'all'    },
+        { label: 'A\u2013Z', value: 'name'   },
+        { label: 'By Region', value: 'region' },
+      ];
+
+      return (
+        <div className="sort-bar">
+          {options.map(opt => (
+            <button
+              key={opt.value}
+              className={'sort-pill' + (sortMode === opt.value ? ' active' : '')}
+              onClick={() => setSortMode(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    // ── SupplierCard ────────────────────────────────────────
+    function SupplierCard({ supplier, onClick }) {
+      return (
+        <div className="card supplier-card" onClick={() => onClick(supplier)}>
+          <div className="card-logo-area">
+            {supplier.logo_url
+              ? <img className="card-logo-img" src={supplier.logo_url} alt={supplier.name} />
+              : <span className="card-logo-initials">{getInitials(supplier.name)}</span>
+            }
+          </div>
+          <div className="card-body">
+            <div className="card-supplier-name">{supplier.name}</div>
+            <div className="card-region-line">
+              {[supplier.region, supplier.country].filter(Boolean).join(', ')}
+            </div>
+            <div>
+              {supplier.region && <span className="tag">{supplier.region}</span>}
+              {supplier.country && supplier.country !== supplier.region && (
+                <span className="tag">{supplier.country}</span>
+              )}
+            </div>
+            <span className="card-view-link">View Portfolio &rarr;</span>
+          </div>
+        </div>
+      );
+    }
+
+    // ── SupplierGrid ────────────────────────────────────────
+    function SupplierGrid({ suppliers, loadingGrid, sortMode, setSortMode, setActiveSupplier }) {
+      const sorted = [...suppliers].sort((a, b) => {
+        if (sortMode === 'name')   return (a.name   || '').localeCompare(b.name   || '');
+        if (sortMode === 'region') return (a.region || '').localeCompare(b.region || '');
+        return 0;
+      });
+
+      return (
+        <div className="page-section">
+          <h1 className="section-heading">Our Producers</h1>
+          <p className="section-subhead">Exceptional wines and beverages, personally curated.</p>
+          <SortBar sortMode={sortMode} setSortMode={setSortMode} />
+          {loadingGrid ? (
+            <div className="state-msg">Loading producers&hellip;</div>
+          ) : suppliers.length === 0 ? (
+            <div className="state-msg">No producers listed yet.</div>
+          ) : (
+            <div className="supplier-grid">
+              {sorted.map(s => (
+                <SupplierCard key={s.id} supplier={s} onClick={setActiveSupplier} />
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ── ProfileHero ─────────────────────────────────────────
+    function ProfileHero({ supplier }) {
+      const hasAbout = supplier.about_summary && supplier.about_summary.trim();
+
+      return (
+        <div className="card profile-hero">
+          {supplier.logo_url && (
+            <img className="profile-logo-img" src={supplier.logo_url} alt={supplier.name} />
+          )}
+          <div className="profile-name">{supplier.name}</div>
+          <div className="profile-region">
+            {[supplier.region, supplier.country].filter(Boolean).join(' / ')}
+          </div>
+          {hasAbout && (
+            <>
+              <hr className="profile-divider" />
+              <p className="profile-about">{supplier.about_summary}</p>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // ── SKURow ──────────────────────────────────────────────
+    function SKURow({ sku, expanded, onToggle, onRequestTasting }) {
+      const primaryLine  = buildProductLabel(sku);
+      const secondaryParts = [sku.varietal, sku.region, sku.vintage].filter(Boolean);
+      const secondaryLine  = secondaryParts.join(' \u00b7 ');
+
+      const handleTastingClick = (e) => {
+        e.stopPropagation();
+        onRequestTasting(sku);
+      };
+
+      return (
+        <div>
+          <div className="sku-row" onClick={onToggle}>
+            <span className="sku-chevron">{expanded ? '\u25be' : '\u25b8'}</span>
+            <div className="sku-info">
+              <div className="sku-name">{primaryLine}</div>
+              {secondaryLine && <div className="sku-sub">{secondaryLine}</div>}
+            </div>
+            {sku.sku_number && (
+              <span className="tag tag-sku">{sku.sku_number}</span>
+            )}
+            <button className="sku-tasting-btn" onClick={handleTastingClick}>
+              Request Tasting
+            </button>
+          </div>
+
+          {expanded && (
+            <div className="sku-detail-panel">
+              <div className="field-row">
+                {sku.varietal && (
+                  <div>
+                    <div className="form-label">Varietal</div>
+                    <div className="field-val">{sku.varietal}</div>
+                  </div>
+                )}
+                {sku.region && (
+                  <div>
+                    <div className="form-label">Region</div>
+                    <div className="field-val">{sku.region}</div>
+                  </div>
+                )}
+                {sku.appellation && (
+                  <div>
+                    <div className="form-label">Appellation</div>
+                    <div className="field-val">{sku.appellation}</div>
+                  </div>
+                )}
+                {sku.country && (
+                  <div>
+                    <div className="form-label">Country</div>
+                    <div className="field-val">{sku.country}</div>
+                  </div>
+                )}
+                {sku.vintage && (
+                  <div>
+                    <div className="form-label">Vintage</div>
+                    <div className="field-val">{sku.vintage}</div>
+                  </div>
+                )}
+                {sku.wholesale_cost != null && (
+                  <div>
+                    <div className="form-label">Wholesale Cost</div>
+                    <div className="field-val">{formatCost(sku.wholesale_cost)}</div>
+                  </div>
+                )}
+              </div>
+              {sku.tech_sheet && (
+                <a
+                  href={sku.tech_sheet}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="tech-sheet-link"
+                >
+                  Download Tech Sheet &rarr;
+                </a>
+              )}
+              <button
+                className="btn btn-primary btn-panel-tasting"
+                onClick={() => onRequestTasting(sku)}
+              >
+                Request a Tasting
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ── SKUAccordion ────────────────────────────────────────
+    function SKUAccordion({ skus, loadingProfile, expandedSKUs, setExpandedSKUs, onRequestTasting }) {
+      const toggleSKU = (id) => {
+        setExpandedSKUs(prev => {
+          const next = new Set(prev);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return next;
+        });
+      };
+
+      return (
+        <div>
+          <h2 className="sku-accordion-heading">Portfolio</h2>
+          {loadingProfile ? (
+            <div className="state-msg">Loading portfolio&hellip;</div>
+          ) : skus.length === 0 ? (
+            <div className="state-msg">No active products listed.</div>
+          ) : (
+            skus.map(sku => (
+              <SKURow
+                key={sku.id}
+                sku={sku}
+                expanded={expandedSKUs.has(sku.id)}
+                onToggle={() => toggleSKU(sku.id)}
+                onRequestTasting={onRequestTasting}
+              />
+            ))
+          )}
+        </div>
+      );
+    }
+
+    // ── SupplierProfile ─────────────────────────────────────
+    function SupplierProfile({
+      supplier, skus, loadingProfile,
+      expandedSKUs, setExpandedSKUs,
+      onBack, onRequestTasting
+    }) {
+      return (
+        <div className="profile-page">
+          <button className="btn btn-back" onClick={onBack} style={{ marginBottom: '1.25rem' }}>
+            &larr; All Producers
+          </button>
+          <ProfileHero supplier={supplier} />
+          <SKUAccordion
+            skus={skus}
+            loadingProfile={loadingProfile}
+            expandedSKUs={expandedSKUs}
+            setExpandedSKUs={setExpandedSKUs}
+            onRequestTasting={onRequestTasting}
+          />
+        </div>
+      );
+    }
+
+    // ── TastingModal ────────────────────────────────────────
+    function TastingModal({ tastingTarget, onClose, onSubmit }) {
+      const [name,          setName]         = useState('');
+      const [establishment, setEstablishment] = useState('');
+      const [role,          setRole]          = useState('');
+      const [email,         setEmail]         = useState('');
+      const [phone,         setPhone]         = useState('');
+      const [product,       setProduct]       = useState(
+        tastingTarget ? buildProductLabel(tastingTarget) : ''
+      );
+      const [notes,  setNotes]  = useState('');
+      const [errors, setErrors] = useState({});
+
+      useEffect(() => {
+        setProduct(tastingTarget ? buildProductLabel(tastingTarget) : '');
+      }, [tastingTarget]);
+
+      const validate = () => {
+        const errs = {};
+        if (!name.trim())          errs.name          = 'Name is required.';
+        if (!establishment.trim()) errs.establishment = 'Establishment is required.';
+        if (!email.trim())         errs.email         = 'Email is required.';
+        return errs;
+      };
+
+      const handleSubmit = () => {
+        const errs = validate();
+        if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+
+        const subject = encodeURIComponent('Tasting Request \u2014 ' + establishment);
+        const body = encodeURIComponent(
+          'Name: ' + name +
+          '\nEstablishment: ' + establishment +
+          '\nRole: ' + role +
+          '\nEmail: ' + email +
+          '\nPhone: ' + phone +
+          '\nProduct: ' + product +
+          '\n\nMessage:\n' + notes
+        );
+        window.location.href = 'mailto:info@pouradvice.com?subject=' + subject + '&body=' + body;
+        onSubmit();
+      };
+
+      const clearError = (field) => setErrors(prev => ({ ...prev, [field]: '' }));
+
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Request a Tasting</h2>
+              <button className="modal-close-btn" onClick={onClose}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Name *</label>
+                <input
+                  className="form-control"
+                  type="text"
+                  value={name}
+                  onChange={e => { setName(e.target.value); clearError('name'); }}
+                />
+                {errors.name && <div className="error-msg">{errors.name}</div>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Establishment / Business *</label>
+                <input
+                  className="form-control"
+                  type="text"
+                  value={establishment}
+                  onChange={e => { setEstablishment(e.target.value); clearError('establishment'); }}
+                />
+                {errors.establishment && <div className="error-msg">{errors.establishment}</div>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Role</label>
+                <input
+                  className="form-control"
+                  type="text"
+                  value={role}
+                  placeholder="e.g. Beverage Director, Buyer, Owner"
+                  onChange={e => setRole(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Email *</label>
+                <input
+                  className="form-control"
+                  type="email"
+                  value={email}
+                  onChange={e => { setEmail(e.target.value); clearError('email'); }}
+                />
+                {errors.email && <div className="error-msg">{errors.email}</div>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Phone</label>
+                <input
+                  className="form-control"
+                  type="tel"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Product of Interest</label>
+                <input
+                  className="form-control"
+                  type="text"
+                  value={product}
+                  onChange={e => setProduct(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Message / Notes</label>
+                <textarea
+                  className="form-control form-textarea"
+                  value={notes}
+                  placeholder="Tell us about your establishment and what you're looking for."
+                  onChange={e => setNotes(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-cancel" onClick={onClose}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleSubmit}>Send Request</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Toast ───────────────────────────────────────────────
+    function Toast({ message }) {
+      if (!message) return null;
+      return <div className="toast">{message}</div>;
+    }
+
+    // ── Footer ──────────────────────────────────────────────
+    function Footer() {
+      return (
+        <footer className="page-footer">
+          <div className="footer-brand">Pour Advice</div>
+          <div className="footer-copy">&copy; 2025 Pour Advice. All rights reserved.</div>
+        </footer>
+      );
+    }
+
+    // ── App ─────────────────────────────────────────────────
+    function App() {
+      const [suppliers,      setSuppliers]      = useState([]);
+      const [loadingGrid,    setLoadingGrid]     = useState(true);
+      const [activeSupplier, setActiveSupplier]  = useState(null);
+      const [skus,           setSkus]            = useState([]);
+      const [loadingProfile, setLoadingProfile]  = useState(false);
+      const [sortMode,       setSortMode]        = useState('name');
+      const [expandedSKUs,   setExpandedSKUs]    = useState(new Set());
+      const [tastingTarget,  setTastingTarget]   = useState(null);
+      const [showModal,      setShowModal]       = useState(false);
+      const [toastMsg,       setToastMsg]        = useState('');
+
+      // Load suppliers on mount
+      useEffect(() => {
+        async function fetchSuppliers() {
+          try {
+            const { data } = await db
+              .from('suppliers')
+              .select('id, name, region, country, about_summary, logo_url, portal_slug')
+              .eq('show_on_website', true)
+              .order('name');
+            setSuppliers(data || []);
+          } catch (err) {
+            console.error('Failed to load suppliers:', err);
+            setSuppliers([]);
+          } finally {
+            setLoadingGrid(false);
+          }
+        }
+        fetchSuppliers();
+      }, []);
+
+      // Load SKUs when active supplier changes
+      useEffect(() => {
+        if (!activeSupplier) return;
+        async function fetchSKUs() {
+          setLoadingProfile(true);
+          try {
+            const { data } = await db
+              .from('products')
+              .select('id, sku_number, brand_name, wine_name, varietal, region, appellation, country, vintage, wholesale_cost, tech_sheet')
+              .eq('supplier_id', activeSupplier.id)
+              .eq('is_active', true)
+              .order('varietal');
+            setSkus(data || []);
+          } catch (err) {
+            console.error('Failed to load SKUs:', err);
+            setSkus([]);
+          } finally {
+            setLoadingProfile(false);
+          }
+        }
+        fetchSKUs();
+      }, [activeSupplier?.id]);
+
+      const handleSelectSupplier = (supplier) => {
+        setActiveSupplier(supplier);
+        setSkus([]);
+        setExpandedSKUs(new Set());
+        window.scrollTo(0, 0);
+      };
+
+      const handleBack = () => {
+        setActiveSupplier(null);
+        setSkus([]);
+      };
+
+      const handleOpenTasting = (target) => {
+        setTastingTarget(target);
+        setShowModal(true);
+      };
+
+      const handleCloseTasting = () => {
+        setShowModal(false);
+      };
+
+      const handleSubmitTasting = () => {
+        setToastMsg('Opening your email client\u2026');
+        setTimeout(() => setShowModal(false), 400);
+        setTimeout(() => setToastMsg(''), 2800);
+      };
+
+      return (
+        <div>
+          <PageHeader onTastingClick={() => handleOpenTasting(null)} />
+
+          {activeSupplier ? (
+            <SupplierProfile
+              supplier={activeSupplier}
+              skus={skus}
+              loadingProfile={loadingProfile}
+              expandedSKUs={expandedSKUs}
+              setExpandedSKUs={setExpandedSKUs}
+              onBack={handleBack}
+              onRequestTasting={handleOpenTasting}
+            />
+          ) : (
+            <SupplierGrid
+              suppliers={suppliers}
+              loadingGrid={loadingGrid}
+              sortMode={sortMode}
+              setSortMode={setSortMode}
+              setActiveSupplier={handleSelectSupplier}
+            />
+          )}
+
+          <Footer />
+
+          {showModal && (
+            <TastingModal
+              tastingTarget={tastingTarget}
+              onClose={handleCloseTasting}
+              onSubmit={handleSubmitTasting}
+            />
+          )}
+
+          <Toast message={toastMsg} />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
