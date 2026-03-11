@@ -490,6 +490,10 @@
       resize: vertical;
     }
 
+    select.form-control {
+      cursor: pointer;
+    }
+
     .error-msg {
       font-size: .75rem;
       color: #000;
@@ -716,7 +720,7 @@
     }
 
     // ── SupplierGrid ────────────────────────────────────────
-    function SupplierGrid({ suppliers, loadingGrid, sortMode, setSortMode, setActiveSupplier }) {
+    function SupplierGrid({ suppliers, loadingGrid, suppliersError, sortMode, setSortMode, setActiveSupplier }) {
       const sorted = [...suppliers].sort((a, b) => {
         if (sortMode === 'name')   return (a.name   || '').localeCompare(b.name   || '');
         if (sortMode === 'region') return (a.region || '').localeCompare(b.region || '');
@@ -730,6 +734,8 @@
           <SortBar sortMode={sortMode} setSortMode={setSortMode} />
           {loadingGrid ? (
             <div className="state-msg">Loading producers&hellip;</div>
+          ) : suppliersError ? (
+            <div className="state-msg">Unable to load producers at this time. Please try again later.</div>
           ) : suppliers.length === 0 ? (
             <div className="state-msg">No producers listed yet.</div>
           ) : (
@@ -912,20 +918,18 @@
     }
 
     // ── TastingModal ────────────────────────────────────────
-    function TastingModal({ tastingTarget, onClose, onSubmit }) {
+    function TastingModal({ tastingTarget, onClose, onSubmit, brands }) {
       const [name,          setName]         = useState('');
       const [establishment, setEstablishment] = useState('');
       const [role,          setRole]          = useState('');
       const [email,         setEmail]         = useState('');
       const [phone,         setPhone]         = useState('');
-      const [product,       setProduct]       = useState(
-        tastingTarget ? buildProductLabel(tastingTarget) : ''
-      );
+      const [product,       setProduct]       = useState(tastingTarget?.brand_name || '');
       const [notes,  setNotes]  = useState('');
       const [errors, setErrors] = useState({});
 
       useEffect(() => {
-        setProduct(tastingTarget ? buildProductLabel(tastingTarget) : '');
+        setProduct(tastingTarget?.brand_name || '');
       }, [tastingTarget]);
 
       const validate = () => {
@@ -1020,12 +1024,16 @@
 
               <div className="form-group">
                 <label className="form-label">Product of Interest</label>
-                <input
+                <select
                   className="form-control"
-                  type="text"
                   value={product}
                   onChange={e => setProduct(e.target.value)}
-                />
+                >
+                  <option value="">&mdash; Select a brand &mdash;</option>
+                  {brands.map(brand => (
+                    <option key={brand} value={brand}>{brand}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group">
@@ -1067,11 +1075,13 @@
     function App() {
       const [suppliers,      setSuppliers]      = useState([]);
       const [loadingGrid,    setLoadingGrid]     = useState(true);
+      const [suppliersError, setSuppliersError]  = useState(false);
       const [activeSupplier, setActiveSupplier]  = useState(null);
       const [skus,           setSkus]            = useState([]);
       const [loadingProfile, setLoadingProfile]  = useState(false);
       const [sortMode,       setSortMode]        = useState('name');
       const [expandedSKUs,   setExpandedSKUs]    = useState(new Set());
+      const [brands,         setBrands]          = useState([]);
       const [tastingTarget,  setTastingTarget]   = useState(null);
       const [showModal,      setShowModal]       = useState(false);
       const [toastMsg,       setToastMsg]        = useState('');
@@ -1080,20 +1090,43 @@
       useEffect(() => {
         async function fetchSuppliers() {
           try {
-            const { data } = await db
+            const { data, error } = await db
               .from('suppliers')
               .select('id, name, region, country, about_summary, logo_url, portal_slug')
               .eq('show_on_website', true)
               .order('name');
+            if (error) {
+              console.error('Supabase error loading suppliers:', error);
+              setSuppliersError(true);
+            }
             setSuppliers(data || []);
           } catch (err) {
             console.error('Failed to load suppliers:', err);
-            setSuppliers([]);
+            setSuppliersError(true);
           } finally {
             setLoadingGrid(false);
           }
         }
         fetchSuppliers();
+      }, []);
+
+      // Load brands for tasting modal on mount
+      useEffect(() => {
+        async function fetchBrands() {
+          try {
+            const { data, error } = await db
+              .from('products')
+              .select('brand_name')
+              .eq('is_active', true)
+              .order('brand_name');
+            if (error) console.error('Supabase error loading brands:', error);
+            const unique = [...new Set((data || []).map(p => p.brand_name).filter(Boolean))];
+            setBrands(unique);
+          } catch (err) {
+            console.error('Failed to load brands:', err);
+          }
+        }
+        fetchBrands();
       }, []);
 
       // Load SKUs when active supplier changes
@@ -1102,12 +1135,13 @@
         async function fetchSKUs() {
           setLoadingProfile(true);
           try {
-            const { data } = await db
+            const { data, error } = await db
               .from('products')
               .select('id, sku_number, brand_name, wine_name, varietal, region, appellation, country, vintage, wholesale_cost, tech_sheet')
               .eq('supplier_id', activeSupplier.id)
               .eq('is_active', true)
               .order('varietal');
+            if (error) console.error('Supabase error loading SKUs:', error);
             setSkus(data || []);
           } catch (err) {
             console.error('Failed to load SKUs:', err);
@@ -1164,6 +1198,7 @@
             <SupplierGrid
               suppliers={suppliers}
               loadingGrid={loadingGrid}
+              suppliersError={suppliersError}
               sortMode={sortMode}
               setSortMode={setSortMode}
               setActiveSupplier={handleSelectSupplier}
@@ -1177,6 +1212,7 @@
               tastingTarget={tastingTarget}
               onClose={handleCloseTasting}
               onSubmit={handleSubmitTasting}
+              brands={brands}
             />
           )}
 
