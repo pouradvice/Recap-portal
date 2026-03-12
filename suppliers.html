@@ -769,7 +769,7 @@
     // ── SKURow ──────────────────────────────────────────────
     function SKURow({ sku, expanded, onToggle, onRequestTasting }) {
       const primaryLine  = buildProductLabel(sku);
-      const secondaryParts = [sku.varietal, sku.region].filter(Boolean);
+      const secondaryParts = [sku.varietal, sku.region, sku.vintage].filter(Boolean);
       const secondaryLine  = secondaryParts.join(' \u00b7 ');
 
       const handleTastingClick = (e) => {
@@ -818,6 +818,12 @@
                   <div>
                     <div className="form-label">Country</div>
                     <div className="field-val">{sku.country}</div>
+                  </div>
+                )}
+                {sku.vintage && (
+                  <div>
+                    <div className="form-label">Vintage</div>
+                    <div className="field-val">{sku.vintage}</div>
                   </div>
                 )}
                 {sku.wholesale_cost != null && (
@@ -1098,7 +1104,7 @@
           try {
             const { data } = await db
               .from('products')
-              .select('id, sku_number, brand_name, wine_name, varietal, region, appellation, country, wholesale_cost, tech_sheet')
+              .select('id, sku_number, brand_name, wine_name, varietal, region, appellation, country, vintage, wholesale_cost, tech_sheet')
               .eq('supplier_id', activeSupplier.id)
               .eq('is_active', true)
               .order('varietal');
