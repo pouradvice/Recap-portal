@@ -2648,6 +2648,7 @@ function ProductsScreen({ onToast, deepProduct, onDeepProductClear }) {
   const [editing,    setEditing]    = useState(null);
   const [showModal,  setShowModal]  = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [selected,   setSelected]   = useState(new Set());
 
   // Auto-open product detail slideover when navigated here from another screen
   useEffect(() => {
@@ -2718,11 +2719,69 @@ function ProductsScreen({ onToast, deepProduct, onDeepProductClear }) {
 
   const supplierName = (id) => suppliers.find(s => s.id === id)?.name || '—';
 
+  const toggleOne = (id) => setSelected(prev => {
+    const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next;
+  });
+  const toggleAll = () => setSelected(
+    selected.size === filtered.length ? new Set() : new Set(filtered.map(p => p.id))
+  );
+
+  const generatePricingSheet = () => {
+    const items = filtered.filter(p => selected.has(p.id));
+    const rows = items.map(p => {
+      const vintage = p.vintage ? `'${String(p.vintage).slice(-2)}` : '';
+      const name    = [p.brand_name, p.wine_name].filter(Boolean).join(' — ');
+      const vars    = Array.isArray(p.varietals) ? p.varietals.join(', ') : (p.varietals || '');
+      const origin  = [vars, p.region].filter(Boolean).join(' · ');
+      const btg     = p.btg_3cs_cost != null ? `$${Number(p.btg_3cs_cost).toFixed(2)}` : '—';
+      const front   = p.frontline    != null ? `$${Number(p.frontline).toFixed(2)}`    : '—';
+      return `<tr><td>${vintage}</td><td>${name}</td><td>${origin || '—'}</td><td>${btg}</td><td>${front}</td></tr>`;
+    }).join('');
+
+    const date = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+    const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
+<title>Pricing Sheet — Pour Advice</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;background:#fff;padding:2.5rem 3rem}
+  .header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #111;padding-bottom:.75rem;margin-bottom:1.75rem}
+  .brand{font-size:1.5rem;font-weight:700;letter-spacing:.02em}
+  .meta{font-size:.8rem;color:#555;text-align:right}
+  table{width:100%;border-collapse:collapse;font-size:.88rem}
+  thead tr{border-bottom:1.5px solid #111}
+  th{text-align:left;padding:.5rem .6rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;font-weight:600;color:#333}
+  td{padding:.55rem .6rem;border-bottom:1px solid #e0e0e0;vertical-align:top}
+  th:nth-child(1),td:nth-child(1){width:3.5rem;text-align:center}
+  th:nth-child(4),td:nth-child(4),th:nth-child(5),td:nth-child(5){width:7rem;text-align:right}
+  tr:last-child td{border-bottom:none}
+  .footer{margin-top:2rem;font-size:.72rem;color:#999;text-align:center}
+  @media print{body{padding:1cm 1.5cm}@page{margin:.75cm}}
+</style></head><body>
+<div class="header">
+  <div class="brand">Pour Advice</div>
+  <div class="meta">Pricing Sheet<br/>${date}</div>
+</div>
+<table>
+  <thead><tr><th>Vint.</th><th>Brand / Wine</th><th>Varietal · Region</th><th>BTG / 3cs</th><th>Frontline</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">Confidential — Pour Advice · For trade use only</div>
+<script>window.onload=()=>window.print();<\/script>
+</body></html>`;
+
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+  };
+
   return (
     <div className="main-wide">
       <div className="page-header">
         <div className="page-title">Product <em>Catalog</em></div>
         <div style={{ display:'flex', gap:'.5rem' }}>
+          {selected.size > 0 && (
+            <button className="btn btn-outline btn-sm" onClick={generatePricingSheet}>↓ Pricing Sheet ({selected.size})</button>
+          )}
           <button className="btn btn-outline btn-sm" onClick={() => setShowImport(true)}>↑ Import CSV</button>
           <button className="btn btn-primary btn-sm" onClick={() => { setEditing({}); setShowModal(true); }}>+ Add Product</button>
         </div>
@@ -2758,6 +2817,9 @@ function ProductsScreen({ onToast, deepProduct, onDeepProductClear }) {
           <table>
             <thead>
               <tr>
+                <th style={{ width:'2rem' }}>
+                  <input type="checkbox" checked={filtered.length > 0 && selected.size === filtered.length} onChange={toggleAll} title="Select all" />
+                </th>
                 <th>SKU</th>
                 <th>Brand / Product</th>
                 <th>Type</th>
@@ -2770,12 +2832,15 @@ function ProductsScreen({ onToast, deepProduct, onDeepProductClear }) {
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={8} style={{ textAlign:'center', color:'#8a7a64', fontStyle:'italic', padding:'2rem' }}>No products match filters.</td></tr>
+                <tr><td colSpan={9} style={{ textAlign:'center', color:'#8a7a64', fontStyle:'italic', padding:'2rem' }}>No products match filters.</td></tr>
               )}
               {filtered.map(p => {
                 const cr = convRates[p.id] || { times_shown: 0, orders: 0, rate: 0 };
                 return (
                   <tr key={p.id} onClick={() => setSel(p)}>
+                    <td onClick={e => e.stopPropagation()} style={{ textAlign:'center' }}>
+                      <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} />
+                    </td>
                     <td><span className="tag" style={{ fontFamily:'monospace', fontSize:'.75rem' }}>{p.sku_number}</span></td>
                     <td>
                       <div className="cell-primary" style={{ fontSize:'.88rem' }}>{p.brand_name}</div>
