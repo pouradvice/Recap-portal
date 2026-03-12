@@ -1865,6 +1865,7 @@ function ClientsScreen({ onToast }) {
 // ── SupplierModal (Add / Edit) ────────────────────────────────────────────────
 const SUPPLIER_BLANK = {
   name: '', portal_password: '', status: 'Active',
+  show_on_website: false,
   contact_name: '', role: '', phone: '', email: '',
   value_tier: '$', source_of_reference: '',
   commission_pct: '', billback_pct: '',
@@ -1883,6 +1884,7 @@ function SupplierModal({ initial, onSave, onClose }) {
       name:                    f.name.trim(),
       portal_password:         f.portal_password || null,
       status:                  f.status,
+      show_on_website:         !!f.show_on_website,
       contact_name:            f.contact_name || null,
       role:                    f.role || null,
       phone:                   f.phone || null,
@@ -1930,6 +1932,14 @@ function SupplierModal({ initial, onSave, onClose }) {
             <div className="form-group">
               <label className="form-label">Portal Password</label>
               <input className="form-control" value={f.portal_password || ''} onChange={e => sf('portal_password', e.target.value)} placeholder="For Supplier Portal login" />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group" style={{ gridColumn:'1/-1' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:'.5rem', cursor:'pointer', fontSize:'.85rem' }}>
+                <input type="checkbox" checked={!!f.show_on_website} onChange={e => sf('show_on_website', e.target.checked)} />
+                Show on website (suppliers.html public page)
+              </label>
             </div>
           </div>
           <div className="form-row">
