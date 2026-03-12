@@ -98,7 +98,6 @@
     .sel-card-info { flex: 1; min-width: 0; }
     .sel-card-brand { font-family: 'Playfair Display', serif; font-size: .8rem; font-weight: 600; color: var(--ink); }
     .sel-card-name { font-size: .73rem; color: var(--label); }
-    .sel-card-vtg { font-size: .7rem; color: var(--sub); margin-top: .1rem; }
     .remove-btn { background: none; border: none; cursor: pointer; color: var(--sub); font-size: .85rem; padding: .2rem; border-radius: 3px; flex-shrink: 0; transition: color .12s; line-height: 1; }
     .remove-btn:hover { color: var(--ink); }
 
@@ -115,54 +114,71 @@
 
     .actions-row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
 
+    /* ── Logo uploader ───────────────────────────────── */
+    .logo-row { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.25rem; padding: .75rem 1rem; background: #fff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.07); flex-wrap: wrap; }
+    .logo-label { font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--label); white-space: nowrap; }
+    .logo-thumb { width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 4px; object-fit: contain; background: var(--cream); flex-shrink: 0; }
+    .logo-placeholder-box { width: 44px; height: 44px; border: 1.5px dashed var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: .55rem; color: var(--sub); text-align: center; flex-shrink: 0; }
+    .logo-upload-btn { position: relative; overflow: hidden; }
+    .logo-upload-btn input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 100px; }
+    .logo-hint { font-size: .72rem; color: var(--sub); font-style: italic; }
+
     /* ── Preview section ─────────────────────────────── */
     .preview-section { background: #fff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.07); overflow: hidden; }
     .preview-header { padding: .75rem 1rem; border-bottom: 1px solid var(--border); background: var(--cream); display: flex; align-items: center; justify-content: space-between; }
     .preview-body { padding: 1.25rem; background: #e8e4de; min-height: 200px; }
 
-    /* ── Sell sheet preview (inside preview-body) ─────── */
-    .sheet-page { background: #fff; width: 100%; max-width: 780px; margin: 0 auto 1.25rem; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.12); padding: 1.5rem 1.75rem 1.25rem; font-family: 'DM Sans', sans-serif; }
+    /* ── Sell sheet preview — portrait ───────────────── */
+    .sheet-page {
+      background: #fff;
+      width: 100%;
+      max-width: 560px;       /* portrait proportions in preview */
+      margin: 0 auto 1.25rem;
+      border-radius: 4px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.12);
+      padding: 1.25rem 1.5rem 1rem;
+      font-family: 'DM Sans', sans-serif;
+    }
     .sheet-page:last-child { margin-bottom: 0; }
 
-    .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .75rem; }
-    .sheet-brand-block { display: flex; align-items: center; gap: .75rem; }
-    .sheet-logo-placeholder { width: 44px; height: 44px; border: 1.5px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: .55rem; color: var(--sub); text-align: center; flex-shrink: 0; }
-    .sheet-wordmark { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; color: var(--ink); line-height: 1.15; }
-    .sheet-tagline { font-family: 'DM Sans', sans-serif; font-size: .72rem; font-style: italic; color: var(--label); }
-    .sheet-date { font-size: .7rem; color: var(--label); text-align: right; margin-top: .2rem; }
+    .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .6rem; }
+    .sheet-brand-block { display: flex; align-items: center; gap: .65rem; }
+    .sheet-logo-placeholder { width: 38px; height: 38px; border: 1.5px dashed var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: .5rem; color: var(--sub); text-align: center; flex-shrink: 0; }
+    .sheet-logo-img { width: 38px; height: 38px; object-fit: contain; border-radius: 3px; flex-shrink: 0; }
+    .sheet-wordmark { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 600; color: var(--ink); line-height: 1.15; }
+    .sheet-tagline { font-family: 'DM Sans', sans-serif; font-size: .67rem; font-style: italic; color: var(--label); }
+    .sheet-date { font-size: .65rem; color: var(--label); text-align: right; margin-top: .2rem; }
 
-    .sheet-rule { margin: .6rem 0 .5rem; }
+    .sheet-rule { margin: .5rem 0 .4rem; }
     .sheet-rule-thick { border: none; border-top: 2px solid var(--ink); margin-bottom: 2px; }
     .sheet-rule-thin { border: none; border-top: 0.5px solid var(--sub); }
 
     /* Table */
-    .sheet-table-wrap { border-radius: 6px; overflow: hidden; border: 1px solid #bbb; margin-top: .5rem; }
-    .sheet-table { width: 100%; border-collapse: collapse; font-size: .75rem; }
+    .sheet-table-wrap { border-radius: 6px; overflow: hidden; border: 1px solid #bbb; margin-top: .4rem; }
+    .sheet-table { width: 100%; border-collapse: collapse; font-size: .7rem; }
     .sheet-table thead tr { background: var(--ink); }
-    .sheet-table thead th { color: #fff; font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding: .45rem .6rem; text-align: left; border-right: 1px solid #333; white-space: nowrap; }
+    .sheet-table thead th { color: #fff; font-size: .57rem; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; padding: .38rem .5rem; text-align: left; border-right: 1px solid #333; white-space: nowrap; }
     .sheet-table thead th:last-child { border-right: none; }
     .sheet-table thead th.center { text-align: center; }
 
     .sheet-table tbody tr:nth-child(odd) { background: #f7f7f7; }
     .sheet-table tbody tr:nth-child(even) { background: #fff; }
-    .sheet-table tbody td { padding: .5rem .6rem; border-right: 1px solid #e0e0e0; vertical-align: middle; }
+    .sheet-table tbody td { padding: .38rem .5rem; border-right: 1px solid #e0e0e0; vertical-align: middle; }
     .sheet-table tbody td:last-child { border-right: none; }
 
-    .td-wine-brand { font-family: 'Playfair Display', serif; font-size: .82rem; font-weight: 700; color: var(--ink); line-height: 1.2; }
-    .td-wine-name { font-family: 'Playfair Display', serif; font-size: .75rem; font-weight: 600; color: var(--ink); }
-    .td-varietal { font-size: .67rem; color: var(--sub); margin-top: .1rem; }
+    .td-wine-brand { font-family: 'Playfair Display', serif; font-size: .76rem; font-weight: 700; color: var(--ink); line-height: 1.2; }
+    .td-wine-name { font-family: 'Playfair Display', serif; font-size: .68rem; font-weight: 600; color: var(--ink); }
+    .td-varietal { font-size: .6rem; color: var(--sub); margin-top: .1rem; }
 
-    .td-vtg { text-align: center; font-size: .8rem; font-weight: 500; color: var(--ink); border-left: 1px solid #e0e0e0; border-right: 1px solid #e0e0e0; }
+    .td-price-main { font-size: .78rem; font-weight: 600; color: var(--ink); }
+    .td-price-case { font-size: .6rem; color: var(--sub); margin-top: .05rem; }
 
-    .td-price-main { font-size: .85rem; font-weight: 600; color: var(--ink); }
-    .td-price-case { font-size: .67rem; color: var(--sub); margin-top: .1rem; }
-
-    .td-distributor { font-size: .75rem; color: var(--label); }
+    .td-distributor { font-size: .68rem; color: var(--label); }
 
     /* Footer */
-    .sheet-footer { margin-top: .75rem; padding-top: .5rem; border-top: 0.5px solid var(--mist); display: flex; justify-content: space-between; align-items: center; }
-    .sheet-disclaimer { font-size: .62rem; color: var(--sub); font-style: italic; }
-    .sheet-page-num { font-size: .62rem; color: var(--sub); }
+    .sheet-footer { margin-top: .6rem; padding-top: .4rem; border-top: 0.5px solid var(--mist); display: flex; justify-content: space-between; align-items: center; }
+    .sheet-disclaimer { font-size: .58rem; color: var(--sub); font-style: italic; }
+    .sheet-page-num { font-size: .58rem; color: var(--sub); }
 
     /* error bar */
     .error-bar { background: #fff3f3; border: 1px solid #f5c0c0; color: #a00; font-size: .82rem; padding: .65rem 1rem; border-radius: 6px; margin-bottom: 1rem; }
@@ -179,6 +195,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const { useState, useEffect, useRef, useCallback } = React;
 
+const PER_PAGE = 8;
+
 function fmtBottle(casePrice) {
   if (!casePrice && casePrice !== 0) return '—';
   return '$' + (casePrice / 12).toFixed(2);
@@ -186,11 +204,6 @@ function fmtBottle(casePrice) {
 function fmtCase(casePrice) {
   if (!casePrice && casePrice !== 0) return '';
   return '$' + Number(casePrice).toFixed(2);
-}
-function fmtVtg(v) {
-  if (!v) return 'NV';
-  const s = String(v);
-  return s.length === 4 ? s.slice(2) : s;
 }
 function currentMonthLabel() {
   const d = new Date();
@@ -208,7 +221,6 @@ function useDragReorder(items, setItems) {
   const dragIdx = useRef(null);
   const dragOverIdx = useRef(null);
 
-  // HTML5 DnD
   function onDragStart(e, idx) {
     dragIdx.current = idx;
     e.dataTransfer.effectAllowed = 'move';
@@ -229,19 +241,15 @@ function useDragReorder(items, setItems) {
   }
   function onDragEnd() { dragIdx.current = null; dragOverIdx.current = null; }
 
-  // Touch fallback
   const touchStart = useRef(null);
   function onTouchStart(e, idx) {
     touchStart.current = { idx, y: e.touches[0].clientY };
   }
-  function onTouchMove(e) {
-    e.preventDefault(); // prevent scroll during drag
-  }
+  function onTouchMove(e) { e.preventDefault(); }
   function onTouchEnd(e, listRef) {
     if (!touchStart.current) return;
     const endY = e.changedTouches[0].clientY;
     const fromIdx = touchStart.current.idx;
-    // Find target card by hit-testing
     if (!listRef.current) { touchStart.current = null; return; }
     const cards = Array.from(listRef.current.querySelectorAll('[data-drag-idx]'));
     let toIdx = fromIdx;
@@ -334,8 +342,7 @@ function SelectedPanel({ selected, setSelected }) {
     setSelected(prev => prev.filter(p => p.id !== id));
   }
 
-  const perPage = 6;
-  const pages   = Math.ceil(selected.length / perPage) || 1;
+  const pages = Math.ceil(selected.length / PER_PAGE) || 1;
 
   return (
     <div className="panel panel-selected">
@@ -375,8 +382,8 @@ function SelectedPanel({ selected, setSelected }) {
         ))}
       </div>
       <div className="page-counter">
-        <strong>{selected.length}</strong> of <strong>{perPage}</strong> per page
-        {selected.length > perPage && (
+        <strong>{selected.length}</strong> of <strong>{PER_PAGE}</strong> per page
+        {selected.length > PER_PAGE && (
           <span> — <strong>{pages}</strong> page{pages !== 1 ? 's' : ''}</span>
         )}
       </div>
@@ -384,15 +391,51 @@ function SelectedPanel({ selected, setSelected }) {
   );
 }
 
+// ─── LogoUploader ─────────────────────────────────────────────────────────────
+function LogoUploader({ logoDataUrl, onLogoChange }) {
+  function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => onLogoChange(ev.target.result);
+    reader.readAsDataURL(file);
+    // reset input so same file can be re-selected
+    e.target.value = '';
+  }
+
+  return (
+    <div className="logo-row">
+      <span className="logo-label">Logo</span>
+      {logoDataUrl
+        ? <img src={logoDataUrl} className="logo-thumb" alt="logo" />
+        : <div className="logo-placeholder-box">LOGO</div>
+      }
+      <label className="btn btn-secondary logo-upload-btn" style={{cursor:'pointer'}}>
+        {logoDataUrl ? 'Replace' : 'Upload Logo'}
+        <input type="file" accept="image/*" onChange={handleFile} />
+      </label>
+      {logoDataUrl && (
+        <button className="btn btn-secondary" onClick={() => onLogoChange(null)}>Remove</button>
+      )}
+      {!logoDataUrl && (
+        <span className="logo-hint">PNG or SVG recommended — appears on every page</span>
+      )}
+    </div>
+  );
+}
+
 // ─── SheetPage (preview) ──────────────────────────────────────────────────────
-function SheetPage({ products, pageNum, totalPages }) {
+function SheetPage({ products, pageNum, totalPages, logoDataUrl }) {
   const dateLabel = currentMonthLabel();
   return (
     <div className="sheet-page">
       {/* Header */}
       <div className="sheet-header">
         <div className="sheet-brand-block">
-          <div className="sheet-logo-placeholder">LOGO</div>
+          {logoDataUrl
+            ? <img src={logoDataUrl} className="sheet-logo-img" alt="logo" />
+            : <div className="sheet-logo-placeholder">LOGO</div>
+          }
           <div>
             <div className="sheet-wordmark">Pour Advice</div>
             <div className="sheet-tagline">Wine &amp; Beverage Brokerage</div>
@@ -414,13 +457,13 @@ function SheetPage({ products, pageNum, totalPages }) {
             <tr>
               <th style={{width:'32%'}}>Wine</th>
               <th style={{width:'20%'}}>Region / Appellation</th>
-              <th style={{width:'14%'}}>1 Bottle</th>
-              <th style={{width:'14%'}}>3+ / BTG</th>
-              <th style={{width:'20%'}}>Distributor</th>
+              <th style={{width:'13%'}} className="center">1 Bottle</th>
+              <th style={{width:'13%'}} className="center">3+ / BTG</th>
+              <th style={{width:'22%'}}>Distributor</th>
             </tr>
           </thead>
           <tbody>
-            {products.map((p, i) => {
+            {products.map((p) => {
               const varietalStr = Array.isArray(p.varietals) ? p.varietals.join(', ') : (p.varietals || '');
               return (
                 <tr key={p.id}>
@@ -430,14 +473,14 @@ function SheetPage({ products, pageNum, totalPages }) {
                     {varietalStr && <div className="td-varietal">{varietalStr}</div>}
                   </td>
                   <td>
-                    <div style={{fontSize:'.75rem',color:'var(--ink)'}}>{p.region || '—'}</div>
-                    {p.appellation && <div style={{fontSize:'.67rem',color:'var(--sub)'}}>{p.appellation}</div>}
+                    <div style={{fontSize:'.68rem',color:'var(--ink)'}}>{p.region || '—'}</div>
+                    {p.appellation && <div style={{fontSize:'.6rem',color:'var(--sub)'}}>{p.appellation}</div>}
                   </td>
-                  <td>
+                  <td style={{textAlign:'center'}}>
                     <div className="td-price-main">{fmtBottle(p.frontline)}</div>
                     {p.frontline && <div className="td-price-case">({fmtCase(p.frontline)} cs)</div>}
                   </td>
-                  <td>
+                  <td style={{textAlign:'center'}}>
                     <div className="td-price-main">{fmtBottle(p.btg_3cs_cost)}</div>
                     {p.btg_3cs_cost && <div className="td-price-case">({fmtCase(p.btg_3cs_cost)} cs)</div>}
                   </td>
@@ -460,45 +503,59 @@ function SheetPage({ products, pageNum, totalPages }) {
   );
 }
 
-// ─── PDF Generation ───────────────────────────────────────────────────────────
-function generatePDF(selected) {
+// ─── PDF Generation (portrait letter, 8 products/page) ───────────────────────
+function generatePDF(selected, logoDataUrl) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+  // Portrait letter
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
 
-  const PW = doc.internal.pageSize.getWidth();   // 792
-  const PH = doc.internal.pageSize.getHeight();  // 612
+  const PW = doc.internal.pageSize.getWidth();   // 612
+  const PH = doc.internal.pageSize.getHeight();  // 792
   const ML = 36, MR = 36, MT = 36;
+  const TABLE_W = PW - ML - MR; // 540
 
-  const perPage = 6;
-  const totalPages = Math.ceil(selected.length / perPage);
-  const dateLabel  = currentMonthLabel();
-
+  // Column layout (total 540pt)
   const COLS = {
-    wine:   { x: ML,          w: 220 },
-    region: { x: ML + 220,    w: 160 },
-    p1:     { x: ML + 380,    w: 110 },
-    p3:     { x: ML + 490,    w: 110 },
-    dist:   { x: ML + 600,    w: PW - ML - MR - 600 },
+    wine:   { x: ML,           w: 175 },
+    region: { x: ML + 175,     w: 115 },
+    p1:     { x: ML + 290,     w: 85  },
+    p3:     { x: ML + 375,     w: 85  },
+    dist:   { x: ML + 460,     w: 80  },
   };
 
-  const ROW_H   = 52;
-  const HEAD_Y  = MT + 72 + 10; // after header block
+  const ROW_H   = 40;
   const HEAD_H  = 20;
-  const TABLE_R = 6; // corner radius
-  const TABLE_W = PW - ML - MR;
+  // Header block: logo/wordmark ~50pt + double rule ~16pt = ~66pt → HEAD_Y = MT + 66
+  const HEAD_Y  = MT + 66;
+  const TABLE_R = 5;
 
-  function drawPageHeader(doc, pageNum) {
-    // Wordmark
-    doc.setFont('times', 'bold');
-    doc.setFontSize(18);
-    doc.setTextColor(10, 10, 10);
-    doc.text('Pour Advice', ML + 2, MT + 18);
+  const totalPages = Math.ceil(selected.length / PER_PAGE);
+  const dateLabel  = currentMonthLabel();
 
-    // Tagline
-    doc.setFont('times', 'italic');
-    doc.setFontSize(9);
-    doc.setTextColor(119, 119, 119);
-    doc.text('Wine & Beverage Brokerage', ML + 2, MT + 30);
+  function drawPageHeader(doc) {
+    const LOGO_SIZE = 38;
+
+    if (logoDataUrl) {
+      doc.addImage(logoDataUrl, ML, MT, LOGO_SIZE, LOGO_SIZE);
+      // Wordmark to the right of logo
+      doc.setFont('times', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(10, 10, 10);
+      doc.text('Pour Advice', ML + LOGO_SIZE + 8, MT + 15);
+      doc.setFont('times', 'italic');
+      doc.setFontSize(8.5);
+      doc.setTextColor(119, 119, 119);
+      doc.text('Wine & Beverage Brokerage', ML + LOGO_SIZE + 8, MT + 27);
+    } else {
+      doc.setFont('times', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(10, 10, 10);
+      doc.text('Pour Advice', ML + 2, MT + 18);
+      doc.setFont('times', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor(119, 119, 119);
+      doc.text('Wine & Beverage Brokerage', ML + 2, MT + 30);
+    }
 
     // Date top-right
     doc.setFont('helvetica', 'normal');
@@ -507,9 +564,9 @@ function generatePDF(selected) {
     doc.text(dateLabel, PW - MR, MT + 16, { align: 'right' });
 
     // Double rule
-    const ruleY = MT + 42;
+    const ruleY = MT + 50;
     doc.setDrawColor(10, 10, 10);
-    doc.setLineWidth(2);
+    doc.setLineWidth(1.75);
     doc.line(ML, ruleY, PW - MR, ruleY);
     doc.setDrawColor(153, 153, 153);
     doc.setLineWidth(0.5);
@@ -517,20 +574,14 @@ function generatePDF(selected) {
   }
 
   function drawTableHeader(doc) {
-    // Rounded rect clip for the whole table
-    const totalRows = 6;
-    const tableH = HEAD_H + totalRows * ROW_H;
-
-    // Draw rounded rect background (clip)
+    // Dark header bar (top corners rounded)
     doc.setFillColor(10, 10, 10);
     doc.roundedRect(ML, HEAD_Y, TABLE_W, HEAD_H, TABLE_R, TABLE_R, 'F');
-    // Re-clip the bottom corners square
     doc.setFillColor(10, 10, 10);
     doc.rect(ML, HEAD_Y + TABLE_R, TABLE_W, HEAD_H - TABLE_R, 'F');
 
-    // Header labels
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     doc.setTextColor(255, 255, 255);
     const labelY = HEAD_Y + HEAD_H / 2 + 2.5;
     const headers = [
@@ -544,19 +595,11 @@ function generatePDF(selected) {
   }
 
   function drawRow(doc, p, rowIdx, isLast) {
-    const y    = HEAD_Y + HEAD_H + rowIdx * ROW_H;
+    const y = HEAD_Y + HEAD_H + rowIdx * ROW_H;
     const fillColor = rowIdx % 2 === 0 ? [247, 247, 247] : [255, 255, 255];
 
-    // Row fill
     doc.setFillColor(...fillColor);
-    if (isLast) {
-      // Bottom of last row needs rounded corners
-      doc.rect(ML, y, TABLE_W, ROW_H, 'F');
-      // Round bottom corners manually by overdrawing corners with white
-      // (simpler: just use rect and let border clip handle it visually)
-    } else {
-      doc.rect(ML, y, TABLE_W, ROW_H, 'F');
-    }
+    doc.rect(ML, y, TABLE_W, ROW_H, 'F');
 
     // Column dividers
     doc.setDrawColor(224, 224, 224);
@@ -565,91 +608,79 @@ function generatePDF(selected) {
       doc.line(col.x, y, col.x, y + ROW_H);
     });
 
-    // Row bottom border
-    doc.setDrawColor(224, 224, 224);
-    doc.setLineWidth(0.3);
-    if (!isLast) doc.line(ML, y + ROW_H, ML + TABLE_W, y + ROW_H);
+    if (!isLast) {
+      doc.setDrawColor(224, 224, 224);
+      doc.setLineWidth(0.3);
+      doc.line(ML, y + ROW_H, ML + TABLE_W, y + ROW_H);
+    }
 
-    const textY = y + 14;
+    const textY = y + 13;
     const pad   = 5;
 
     // Wine: brand
     doc.setFont('times', 'bold');
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(10, 10, 10);
-    const brand = String(p.brand_name || '—');
-    doc.text(brand, COLS.wine.x + pad, textY, { maxWidth: COLS.wine.w - pad * 2 });
+    doc.text(String(p.brand_name || '—'), COLS.wine.x + pad, textY, { maxWidth: COLS.wine.w - pad * 2 });
 
     // Wine: name
     doc.setFont('times', 'bold');
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(30, 30, 30);
     const wineName = String(p.wine_name || '');
-    if (wineName) doc.text(wineName, COLS.wine.x + pad, textY + 11, { maxWidth: COLS.wine.w - pad * 2 });
+    if (wineName) doc.text(wineName, COLS.wine.x + pad, textY + 10, { maxWidth: COLS.wine.w - pad * 2 });
 
     // Varietal
     const varietalStr = Array.isArray(p.varietals) ? p.varietals.join(', ') : (p.varietals || '');
     if (varietalStr) {
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.5);
+      doc.setFontSize(6);
       doc.setTextColor(153, 153, 153);
-      doc.text(varietalStr, COLS.wine.x + pad, textY + 21, { maxWidth: COLS.wine.w - pad * 2 });
+      doc.text(varietalStr, COLS.wine.x + pad, textY + 19, { maxWidth: COLS.wine.w - pad * 2 });
     }
 
     // Region
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
+    doc.setFontSize(7);
     doc.setTextColor(10, 10, 10);
     doc.text(String(p.region || '—'), COLS.region.x + pad, textY, { maxWidth: COLS.region.w - pad * 2 });
     if (p.appellation) {
-      doc.setFontSize(6.5);
+      doc.setFontSize(6);
       doc.setTextColor(153, 153, 153);
-      doc.text(String(p.appellation), COLS.region.x + pad, textY + 10, { maxWidth: COLS.region.w - pad * 2 });
+      doc.text(String(p.appellation), COLS.region.x + pad, textY + 9, { maxWidth: COLS.region.w - pad * 2 });
     }
 
-    // Price frontline (1cs)
+    // Price: 1 bottle (frontline)
     const b1 = fmtBottle(p.frontline);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(10, 10, 10);
-    doc.text(b1, COLS.p1.x + COLS.p1.w / 2, textY + 5, { align: 'center' });
+    doc.text(b1, COLS.p1.x + COLS.p1.w / 2, textY + 4, { align: 'center' });
     if (p.frontline) {
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.5);
+      doc.setFontSize(6);
       doc.setTextColor(153, 153, 153);
-      doc.text(`(${fmtCase(p.frontline)} cs)`, COLS.p1.x + COLS.p1.w / 2, textY + 16, { align: 'center' });
+      doc.text(`(${fmtCase(p.frontline)} cs)`, COLS.p1.x + COLS.p1.w / 2, textY + 14, { align: 'center' });
     }
 
-    // Price 3cs / BTG
+    // Price: 3cs / BTG
     const b3 = fmtBottle(p.btg_3cs_cost);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(10, 10, 10);
-    doc.text(b3, COLS.p3.x + COLS.p3.w / 2, textY + 5, { align: 'center' });
+    doc.text(b3, COLS.p3.x + COLS.p3.w / 2, textY + 4, { align: 'center' });
     if (p.btg_3cs_cost) {
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.5);
+      doc.setFontSize(6);
       doc.setTextColor(153, 153, 153);
-      doc.text(`(${fmtCase(p.btg_3cs_cost)} cs)`, COLS.p3.x + COLS.p3.w / 2, textY + 16, { align: 'center' });
+      doc.text(`(${fmtCase(p.btg_3cs_cost)} cs)`, COLS.p3.x + COLS.p3.w / 2, textY + 14, { align: 'center' });
     }
 
     // Distributor
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
+    doc.setFontSize(7);
     doc.setTextColor(119, 119, 119);
-    doc.text(String(p.distributor || '—'), COLS.dist.x + pad, textY + 5, { maxWidth: COLS.dist.w - pad * 2 });
-  }
-
-  function drawFooter(doc, pageNum, totalPages) {
-    const footerY = PH - 22;
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.5);
-    doc.line(ML, footerY - 6, PW - MR, footerY - 6);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(153, 153, 153);
-    doc.text('Prices subject to change. For trade use only. All pricing in USD.', ML, footerY);
-    doc.text(`Page ${pageNum} of ${totalPages}`, PW - MR, footerY, { align: 'right' });
+    doc.text(String(p.distributor || '—'), COLS.dist.x + pad, textY + 4, { maxWidth: COLS.dist.w - pad * 2 });
   }
 
   function drawTableBorder(doc, rowCount) {
@@ -659,12 +690,24 @@ function generatePDF(selected) {
     doc.roundedRect(ML, HEAD_Y, TABLE_W, tableH, TABLE_R, TABLE_R, 'S');
   }
 
+  function drawFooter(doc, pageNum, totalPages) {
+    const footerY = PH - 24;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(ML, footerY - 8, PW - MR, footerY - 8);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(153, 153, 153);
+    doc.text('Prices subject to change. For trade use only. All pricing in USD.', ML, footerY);
+    doc.text(`Page ${pageNum} of ${totalPages}`, PW - MR, footerY, { align: 'right' });
+  }
+
   // ── Generate pages ──
   for (let pg = 0; pg < totalPages; pg++) {
     if (pg > 0) doc.addPage();
-    const slice = selected.slice(pg * perPage, pg * perPage + perPage);
+    const slice = selected.slice(pg * PER_PAGE, pg * PER_PAGE + PER_PAGE);
 
-    drawPageHeader(doc, pg + 1);
+    drawPageHeader(doc);
     drawTableHeader(doc);
     slice.forEach((p, i) => drawRow(doc, p, i, i === slice.length - 1));
     drawTableBorder(doc, slice.length);
@@ -676,10 +719,11 @@ function generatePDF(selected) {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
-  const [products,  setProducts]  = useState([]);
-  const [selected,  setSelected]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
+  const [products,     setProducts]     = useState([]);
+  const [selected,     setSelected]     = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [logoDataUrl,  setLogoDataUrl]  = useState(null);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -716,10 +760,9 @@ function App() {
     }
   }
 
-  const perPage   = 6;
-  const pageCount = Math.ceil(selected.length / perPage) || 1;
+  const pageCount = Math.ceil(selected.length / PER_PAGE) || 1;
   const pages     = Array.from({ length: pageCount }, (_, i) =>
-    selected.slice(i * perPage, i * perPage + perPage)
+    selected.slice(i * PER_PAGE, i * PER_PAGE + PER_PAGE)
   );
 
   return (
@@ -749,12 +792,15 @@ function App() {
         />
       </div>
 
+      {/* Logo uploader */}
+      <LogoUploader logoDataUrl={logoDataUrl} onLogoChange={setLogoDataUrl} />
+
       {/* Actions */}
       <div className="actions-row">
         <button
           className="btn btn-primary"
           disabled={selected.length === 0}
-          onClick={() => generatePDF(selected)}
+          onClick={() => generatePDF(selected, logoDataUrl)}
         >
           ↓ Download PDF
         </button>
@@ -795,6 +841,7 @@ function App() {
                 products={pageProducts}
                 pageNum={i + 1}
                 totalPages={pageCount}
+                logoDataUrl={logoDataUrl}
               />
             ))
           )}
