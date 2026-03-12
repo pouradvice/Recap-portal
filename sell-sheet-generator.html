@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pour Advice — Sell Sheet Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink:       #0a0a0a;
+      --parchment: #f5f0e8;
+      --cream:     #faf7f2;
+      --mist:      #ddd8cc;
+      --border:    #cccccc;
+      --label:     #777777;
+      --sub:       #999999;
+    }
+
+    html, body { min-height: 100vh; background: var(--cream); color: var(--ink); font-family: 'DM Sans', sans-serif; }
+    #root { min-height: 100vh; }
+
+    /* ── Page layout ─────────────────────────────────── */
+    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+
+    /* ── Header ──────────────────────────────────────── */
+    .app-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: .35rem; }
+    .app-wordmark { font-family: 'Playfair Display', serif; font-size: 1.45rem; font-weight: 600; color: var(--ink); letter-spacing: .02em; }
+    .app-tagline { font-family: 'DM Sans', sans-serif; font-size: .78rem; color: var(--label); letter-spacing: .06em; text-transform: uppercase; font-style: italic; }
+    .app-subtitle { font-size: .82rem; color: var(--label); margin-bottom: 1.5rem; }
+
+    /* ── Two-panel row ───────────────────────────────── */
+    .panels-row { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1.5rem; }
+    @media (max-width: 720px) { .panels-row { flex-direction: column; } }
+
+    /* ── Panel card ──────────────────────────────────── */
+    .panel { background: #fff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.07); overflow: hidden; }
+    .panel-selector { width: 340px; flex-shrink: 0; }
+    .panel-selected { width: 340px; flex-shrink: 0; }
+    @media (max-width: 720px) { .panel-selector, .panel-selected { width: 100%; } }
+
+    .panel-header { padding: .75rem 1rem; border-bottom: 1px solid var(--border); background: var(--cream); display: flex; align-items: center; justify-content: space-between; }
+    .panel-title { font-family: 'DM Sans', sans-serif; font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--label); }
+    .panel-badge { background: var(--ink); color: #fff; font-size: .65rem; font-weight: 600; padding: .15rem .45rem; border-radius: 10px; letter-spacing: .04em; }
+
+    /* Search input */
+    .search-wrap { padding: .6rem .75rem; border-bottom: 1px solid var(--mist); }
+    .search-input { width: 100%; padding: .45rem .65rem; border: 1px solid var(--border); border-radius: 5px; font-family: 'DM Sans', sans-serif; font-size: .82rem; color: var(--ink); background: #fff; outline: none; transition: border-color .15s; }
+    .search-input:focus { border-color: var(--ink); }
+
+    /* Product list */
+    .product-list { max-height: 380px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--mist) transparent; }
+    .product-list::-webkit-scrollbar { width: 4px; }
+    .product-list::-webkit-scrollbar-thumb { background: var(--mist); border-radius: 2px; }
+
+    .product-item { display: flex; align-items: center; gap: .65rem; padding: .6rem .85rem; cursor: pointer; border-bottom: 1px solid var(--mist); transition: background .12s; user-select: none; }
+    .product-item:last-child { border-bottom: none; }
+    .product-item:hover { background: var(--cream); }
+    .product-item.selected-item { background: #f0ede8; }
+
+    .product-check { width: 16px; height: 16px; border: 1.5px solid var(--border); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .12s; }
+    .product-item.selected-item .product-check { background: var(--ink); border-color: var(--ink); }
+    .check-icon { color: #fff; font-size: .7rem; line-height: 1; }
+
+    .product-info { min-width: 0; }
+    .product-brand { font-family: 'Playfair Display', serif; font-size: .82rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .product-name-small { font-size: .75rem; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .product-vintage-tag { margin-left: auto; font-size: .7rem; color: var(--sub); flex-shrink: 0; padding-left: .4rem; }
+
+    /* Empty state */
+    .empty-state { padding: 2rem 1rem; text-align: center; color: var(--sub); font-size: .82rem; font-style: italic; }
+
+    /* Loading state */
+    .loading-state { padding: 2rem 1rem; text-align: center; color: var(--label); font-size: .82rem; }
+    .loading-dot { display: inline-block; animation: pulse 1.2s ease-in-out infinite; }
+    .loading-dot:nth-child(2) { animation-delay: .2s; }
+    .loading-dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes pulse { 0%,80%,100% { opacity: .3; } 40% { opacity: 1; } }
+
+    /* ── Selected cards ──────────────────────────────── */
+    .selected-list { padding: .5rem; min-height: 60px; max-height: 420px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--mist) transparent; }
+    .selected-list::-webkit-scrollbar { width: 4px; }
+    .selected-list::-webkit-scrollbar-thumb { background: var(--mist); border-radius: 2px; }
+
+    .sel-card { background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: .55rem .75rem; margin-bottom: .4rem; display: flex; align-items: center; gap: .5rem; cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,.06); transition: box-shadow .15s, opacity .15s; user-select: none; touch-action: none; }
+    .sel-card:last-child { margin-bottom: 0; }
+    .sel-card:active { cursor: grabbing; }
+    .sel-card.dragging { opacity: .45; box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+    .sel-card.drag-over { border-color: var(--ink); background: var(--cream); }
+
+    .drag-handle { color: var(--sub); font-size: .85rem; cursor: grab; flex-shrink: 0; }
+    .sel-card-info { flex: 1; min-width: 0; }
+    .sel-card-brand { font-family: 'Playfair Display', serif; font-size: .8rem; font-weight: 600; color: var(--ink); }
+    .sel-card-name { font-size: .73rem; color: var(--label); }
+    .sel-card-vtg { font-size: .7rem; color: var(--sub); margin-top: .1rem; }
+    .remove-btn { background: none; border: none; cursor: pointer; color: var(--sub); font-size: .85rem; padding: .2rem; border-radius: 3px; flex-shrink: 0; transition: color .12s; line-height: 1; }
+    .remove-btn:hover { color: var(--ink); }
+
+    .page-counter { padding: .6rem .85rem; border-top: 1px solid var(--mist); font-size: .7rem; color: var(--label); text-align: center; letter-spacing: .04em; }
+    .page-counter strong { color: var(--ink); }
+
+    /* ── Buttons ─────────────────────────────────────── */
+    .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .6rem 1.25rem; border-radius: 5px; font-family: 'DM Sans', sans-serif; font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: all .15s; border: 1.5px solid transparent; line-height: 1; }
+    .btn-primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .btn-primary:hover { background: #333; }
+    .btn-primary:disabled { background: var(--label); border-color: var(--label); cursor: not-allowed; }
+    .btn-secondary { background: #fff; color: var(--ink); border-color: var(--ink); }
+    .btn-secondary:hover { background: var(--cream); }
+
+    .actions-row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+
+    /* ── Preview section ─────────────────────────────── */
+    .preview-section { background: #fff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.07); overflow: hidden; }
+    .preview-header { padding: .75rem 1rem; border-bottom: 1px solid var(--border); background: var(--cream); display: flex; align-items: center; justify-content: space-between; }
+    .preview-body { padding: 1.25rem; background: #e8e4de; min-height: 200px; }
+
+    /* ── Sell sheet preview (inside preview-body) ─────── */
+    .sheet-page { background: #fff; width: 100%; max-width: 780px; margin: 0 auto 1.25rem; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.12); padding: 1.5rem 1.75rem 1.25rem; font-family: 'DM Sans', sans-serif; }
+    .sheet-page:last-child { margin-bottom: 0; }
+
+    .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .75rem; }
+    .sheet-brand-block { display: flex; align-items: center; gap: .75rem; }
+    .sheet-logo-placeholder { width: 44px; height: 44px; border: 1.5px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: .55rem; color: var(--sub); text-align: center; flex-shrink: 0; }
+    .sheet-wordmark { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; color: var(--ink); line-height: 1.15; }
+    .sheet-tagline { font-family: 'DM Sans', sans-serif; font-size: .72rem; font-style: italic; color: var(--label); }
+    .sheet-date { font-size: .7rem; color: var(--label); text-align: right; margin-top: .2rem; }
+
+    .sheet-rule { margin: .6rem 0 .5rem; }
+    .sheet-rule-thick { border: none; border-top: 2px solid var(--ink); margin-bottom: 2px; }
+    .sheet-rule-thin { border: none; border-top: 0.5px solid var(--sub); }
+
+    /* Table */
+    .sheet-table-wrap { border-radius: 6px; overflow: hidden; border: 1px solid #bbb; margin-top: .5rem; }
+    .sheet-table { width: 100%; border-collapse: collapse; font-size: .75rem; }
+    .sheet-table thead tr { background: var(--ink); }
+    .sheet-table thead th { color: #fff; font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding: .45rem .6rem; text-align: left; border-right: 1px solid #333; white-space: nowrap; }
+    .sheet-table thead th:last-child { border-right: none; }
+    .sheet-table thead th.center { text-align: center; }
+
+    .sheet-table tbody tr:nth-child(odd) { background: #f7f7f7; }
+    .sheet-table tbody tr:nth-child(even) { background: #fff; }
+    .sheet-table tbody td { padding: .5rem .6rem; border-right: 1px solid #e0e0e0; vertical-align: middle; }
+    .sheet-table tbody td:last-child { border-right: none; }
+
+    .td-wine-brand { font-family: 'Playfair Display', serif; font-size: .82rem; font-weight: 700; color: var(--ink); line-height: 1.2; }
+    .td-wine-name { font-family: 'Playfair Display', serif; font-size: .75rem; font-weight: 600; color: var(--ink); }
+    .td-varietal { font-size: .67rem; color: var(--sub); margin-top: .1rem; }
+
+    .td-vtg { text-align: center; font-size: .8rem; font-weight: 500; color: var(--ink); border-left: 1px solid #e0e0e0; border-right: 1px solid #e0e0e0; }
+
+    .td-price-main { font-size: .85rem; font-weight: 600; color: var(--ink); }
+    .td-price-case { font-size: .67rem; color: var(--sub); margin-top: .1rem; }
+
+    .td-distributor { font-size: .75rem; color: var(--label); }
+
+    /* Footer */
+    .sheet-footer { margin-top: .75rem; padding-top: .5rem; border-top: 0.5px solid var(--mist); display: flex; justify-content: space-between; align-items: center; }
+    .sheet-disclaimer { font-size: .62rem; color: var(--sub); font-style: italic; }
+    .sheet-page-num { font-size: .62rem; color: var(--sub); }
+
+    /* error bar */
+    .error-bar { background: #fff3f3; border: 1px solid #f5c0c0; color: #a00; font-size: .82rem; padding: .65rem 1rem; border-radius: 6px; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// ─── Supabase credentials ─────────────────────────────────────────────────────
+const SUPABASE_URL      = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const { useState, useEffect, useRef, useCallback } = React;
+
+function fmtBottle(casePrice) {
+  if (!casePrice && casePrice !== 0) return '—';
+  return '$' + (casePrice / 12).toFixed(2);
+}
+function fmtCase(casePrice) {
+  if (!casePrice && casePrice !== 0) return '';
+  return '$' + Number(casePrice).toFixed(2);
+}
+function fmtVtg(v) {
+  if (!v) return 'NV';
+  const s = String(v);
+  return s.length === 4 ? s.slice(2) : s;
+}
+function currentMonthLabel() {
+  const d = new Date();
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+}
+function filenameDateLabel() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+// ─── Drag-to-reorder hook ─────────────────────────────────────────────────────
+function useDragReorder(items, setItems) {
+  const dragIdx = useRef(null);
+  const dragOverIdx = useRef(null);
+
+  // HTML5 DnD
+  function onDragStart(e, idx) {
+    dragIdx.current = idx;
+    e.dataTransfer.effectAllowed = 'move';
+  }
+  function onDragEnter(idx) { dragOverIdx.current = idx; }
+  function onDragOver(e) { e.preventDefault(); }
+  function onDrop(e) {
+    e.preventDefault();
+    const from = dragIdx.current;
+    const to   = dragOverIdx.current;
+    if (from === null || to === null || from === to) return;
+    const next = [...items];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setItems(next);
+    dragIdx.current = null;
+    dragOverIdx.current = null;
+  }
+  function onDragEnd() { dragIdx.current = null; dragOverIdx.current = null; }
+
+  // Touch fallback
+  const touchStart = useRef(null);
+  function onTouchStart(e, idx) {
+    touchStart.current = { idx, y: e.touches[0].clientY };
+  }
+  function onTouchMove(e) {
+    e.preventDefault(); // prevent scroll during drag
+  }
+  function onTouchEnd(e, listRef) {
+    if (!touchStart.current) return;
+    const endY = e.changedTouches[0].clientY;
+    const fromIdx = touchStart.current.idx;
+    // Find target card by hit-testing
+    if (!listRef.current) { touchStart.current = null; return; }
+    const cards = Array.from(listRef.current.querySelectorAll('[data-drag-idx]'));
+    let toIdx = fromIdx;
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      const mid  = rect.top + rect.height / 2;
+      if (endY < mid) { toIdx = parseInt(card.dataset.dragIdx, 10); break; }
+      toIdx = parseInt(card.dataset.dragIdx, 10);
+    }
+    if (fromIdx !== toIdx) {
+      const next = [...items];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      setItems(next);
+    }
+    touchStart.current = null;
+  }
+
+  return { onDragStart, onDragEnter, onDragOver, onDrop, onDragEnd, onTouchStart, onTouchMove, onTouchEnd };
+}
+
+// ─── ProductSelector ──────────────────────────────────────────────────────────
+function ProductSelector({ products, selectedIds, onToggle, loading, error }) {
+  const [query, setQuery] = useState('');
+
+  const filtered = products.filter(p => {
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return (p.brand || '').toLowerCase().includes(q) ||
+           (p.name  || '').toLowerCase().includes(q);
+  });
+
+  return (
+    <div className="panel panel-selector">
+      <div className="panel-header">
+        <span className="panel-title">All Products</span>
+        <span className="panel-badge">{products.length}</span>
+      </div>
+      <div className="search-wrap">
+        <input
+          className="search-input"
+          type="text"
+          placeholder="Search brand or wine name…"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
+      </div>
+      <div className="product-list">
+        {loading && (
+          <div className="loading-state">
+            Loading<span className="loading-dot">.</span><span className="loading-dot">.</span><span className="loading-dot">.</span>
+          </div>
+        )}
+        {error && <div className="empty-state" style={{color:'#a00'}}>{error}</div>}
+        {!loading && !error && filtered.length === 0 && (
+          <div className="empty-state">No products found.</div>
+        )}
+        {!loading && !error && filtered.map(p => {
+          const isSel = selectedIds.has(p.id);
+          return (
+            <div
+              key={p.id}
+              className={`product-item${isSel ? ' selected-item' : ''}`}
+              onClick={() => onToggle(p)}
+            >
+              <div className="product-check">
+                {isSel && <span className="check-icon">✓</span>}
+              </div>
+              <div className="product-info">
+                <div className="product-brand">{p.brand || '—'}</div>
+                <div className="product-name-small">{p.name || '—'}</div>
+              </div>
+              <span className="product-vintage-tag">{p.vintage ? `'${fmtVtg(p.vintage)}` : 'NV'}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── SelectedPanel ────────────────────────────────────────────────────────────
+function SelectedPanel({ selected, setSelected }) {
+  const listRef = useRef(null);
+  const [draggingIdx, setDraggingIdx] = useState(null);
+  const [dragOverIdx_, setDragOverIdx_] = useState(null);
+
+  const dnd = useDragReorder(selected, setSelected);
+
+  function remove(id) {
+    setSelected(prev => prev.filter(p => p.id !== id));
+  }
+
+  const perPage = 6;
+  const pages   = Math.ceil(selected.length / perPage) || 1;
+
+  return (
+    <div className="panel panel-selected">
+      <div className="panel-header">
+        <span className="panel-title">Selected</span>
+        <span className="panel-badge">{selected.length}</span>
+      </div>
+      <div
+        className="selected-list"
+        ref={listRef}
+        onDragOver={dnd.onDragOver}
+        onDrop={dnd.onDrop}
+      >
+        {selected.length === 0 && (
+          <div className="empty-state">Click products on the left to add them.</div>
+        )}
+        {selected.map((p, idx) => (
+          <div
+            key={p.id}
+            data-drag-idx={idx}
+            className={`sel-card${draggingIdx === idx ? ' dragging' : ''}${dragOverIdx_ === idx ? ' drag-over' : ''}`}
+            draggable
+            onDragStart={e => { setDraggingIdx(idx); dnd.onDragStart(e, idx); }}
+            onDragEnter={() => { setDragOverIdx_(idx); dnd.onDragEnter(idx); }}
+            onDragEnd={() => { setDraggingIdx(null); setDragOverIdx_(null); dnd.onDragEnd(); }}
+            onTouchStart={e => dnd.onTouchStart(e, idx)}
+            onTouchMove={dnd.onTouchMove}
+            onTouchEnd={e => dnd.onTouchEnd(e, listRef)}
+          >
+            <span className="drag-handle">⠿</span>
+            <div className="sel-card-info">
+              <div className="sel-card-brand">{p.brand || '—'}</div>
+              <div className="sel-card-name">{p.name || '—'}</div>
+              <div className="sel-card-vtg">{p.vintage || 'NV'}</div>
+            </div>
+            <button className="remove-btn" onClick={() => remove(p.id)} title="Remove">✕</button>
+          </div>
+        ))}
+      </div>
+      <div className="page-counter">
+        <strong>{selected.length}</strong> of <strong>{perPage}</strong> per page
+        {selected.length > perPage && (
+          <span> — <strong>{pages}</strong> page{pages !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── SheetPage (preview) ──────────────────────────────────────────────────────
+function SheetPage({ products, pageNum, totalPages }) {
+  const dateLabel = currentMonthLabel();
+  return (
+    <div className="sheet-page">
+      {/* Header */}
+      <div className="sheet-header">
+        <div className="sheet-brand-block">
+          <div className="sheet-logo-placeholder">LOGO</div>
+          <div>
+            <div className="sheet-wordmark">Pour Advice</div>
+            <div className="sheet-tagline">Wine &amp; Beverage Brokerage</div>
+          </div>
+        </div>
+        <div className="sheet-date">{dateLabel}</div>
+      </div>
+
+      {/* Double rule */}
+      <div className="sheet-rule">
+        <div className="sheet-rule-thick"></div>
+        <div className="sheet-rule-thin"></div>
+      </div>
+
+      {/* Table */}
+      <div className="sheet-table-wrap">
+        <table className="sheet-table">
+          <thead>
+            <tr>
+              <th style={{width:'30%'}}>Wine</th>
+              <th className="center" style={{width:'6%'}}>Vtg</th>
+              <th style={{width:'18%'}}>Region / Appellation</th>
+              <th style={{width:'14%'}}>1 Bottle</th>
+              <th style={{width:'14%'}}>3+ / BTG</th>
+              <th style={{width:'18%'}}>Distributor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((p, i) => (
+              <tr key={p.id}>
+                <td>
+                  <div className="td-wine-brand">{p.brand || '—'}</div>
+                  <div className="td-wine-name">{p.name || ''}</div>
+                  {p.varietals && <div className="td-varietal">{p.varietals}</div>}
+                </td>
+                <td className="td-vtg">{fmtVtg(p.vintage)}</td>
+                <td>
+                  <div style={{fontSize:'.75rem',color:'var(--ink)'}}>{p.region || '—'}</div>
+                  {p.appellation && <div style={{fontSize:'.67rem',color:'var(--sub)'}}>{p.appellation}</div>}
+                </td>
+                <td>
+                  <div className="td-price-main">{fmtBottle(p.price_1cs)}</div>
+                  {p.price_1cs && <div className="td-price-case">({fmtCase(p.price_1cs)} cs)</div>}
+                </td>
+                <td>
+                  <div className="td-price-main">{fmtBottle(p.price_3cs)}</div>
+                  {p.price_3cs && <div className="td-price-case">({fmtCase(p.price_3cs)} cs)</div>}
+                </td>
+                <td className="td-distributor">{p.distributor || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer */}
+      <div className="sheet-footer">
+        <div className="sheet-disclaimer">
+          Prices subject to change. For trade use only. All pricing in USD.
+        </div>
+        <div className="sheet-page-num">Page {pageNum} of {totalPages}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PDF Generation ───────────────────────────────────────────────────────────
+function generatePDF(selected) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+
+  const PW = doc.internal.pageSize.getWidth();   // 792
+  const PH = doc.internal.pageSize.getHeight();  // 612
+  const ML = 36, MR = 36, MT = 36;
+
+  const perPage = 6;
+  const totalPages = Math.ceil(selected.length / perPage);
+  const dateLabel  = currentMonthLabel();
+
+  const COLS = {
+    wine:   { x: ML,          w: 210 },
+    vtg:    { x: ML + 210,    w:  44 },
+    region: { x: ML + 254,    w: 140 },
+    p1:     { x: ML + 394,    w: 100 },
+    p3:     { x: ML + 494,    w: 100 },
+    dist:   { x: ML + 594,    w: PW - ML - MR - 594 },
+  };
+
+  const ROW_H   = 52;
+  const HEAD_Y  = MT + 72 + 10; // after header block
+  const HEAD_H  = 20;
+  const TABLE_R = 6; // corner radius
+  const TABLE_W = PW - ML - MR;
+
+  function drawPageHeader(doc, pageNum) {
+    // Wordmark
+    doc.setFont('times', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(10, 10, 10);
+    doc.text('Pour Advice', ML + 2, MT + 18);
+
+    // Tagline
+    doc.setFont('times', 'italic');
+    doc.setFontSize(9);
+    doc.setTextColor(119, 119, 119);
+    doc.text('Wine & Beverage Brokerage', ML + 2, MT + 30);
+
+    // Date top-right
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(119, 119, 119);
+    doc.text(dateLabel, PW - MR, MT + 16, { align: 'right' });
+
+    // Double rule
+    const ruleY = MT + 42;
+    doc.setDrawColor(10, 10, 10);
+    doc.setLineWidth(2);
+    doc.line(ML, ruleY, PW - MR, ruleY);
+    doc.setDrawColor(153, 153, 153);
+    doc.setLineWidth(0.5);
+    doc.line(ML, ruleY + 3, PW - MR, ruleY + 3);
+  }
+
+  function drawTableHeader(doc) {
+    // Rounded rect clip for the whole table
+    const totalRows = 6;
+    const tableH = HEAD_H + totalRows * ROW_H;
+
+    // Draw rounded rect background (clip)
+    doc.setFillColor(10, 10, 10);
+    doc.roundedRect(ML, HEAD_Y, TABLE_W, HEAD_H, TABLE_R, TABLE_R, 'F');
+    // Re-clip the bottom corners square
+    doc.setFillColor(10, 10, 10);
+    doc.rect(ML, HEAD_Y + TABLE_R, TABLE_W, HEAD_H - TABLE_R, 'F');
+
+    // Header labels
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(255, 255, 255);
+    const labelY = HEAD_Y + HEAD_H / 2 + 2.5;
+    const headers = [
+      { label: 'WINE',               cx: COLS.wine.x   + COLS.wine.w / 2   },
+      { label: 'VTG',                cx: COLS.vtg.x    + COLS.vtg.w / 2    },
+      { label: 'REGION / APPELLATION', cx: COLS.region.x + COLS.region.w / 2 },
+      { label: '1 BOTTLE',           cx: COLS.p1.x     + COLS.p1.w / 2     },
+      { label: '3+ / BTG',           cx: COLS.p3.x     + COLS.p3.w / 2     },
+      { label: 'DISTRIBUTOR',        cx: COLS.dist.x   + COLS.dist.w / 2   },
+    ];
+    headers.forEach(h => doc.text(h.label, h.cx, labelY, { align: 'center' }));
+  }
+
+  function drawRow(doc, p, rowIdx, isLast) {
+    const y    = HEAD_Y + HEAD_H + rowIdx * ROW_H;
+    const fillColor = rowIdx % 2 === 0 ? [247, 247, 247] : [255, 255, 255];
+
+    // Row fill
+    doc.setFillColor(...fillColor);
+    if (isLast) {
+      // Bottom of last row needs rounded corners
+      doc.rect(ML, y, TABLE_W, ROW_H, 'F');
+      // Round bottom corners manually by overdrawing corners with white
+      // (simpler: just use rect and let border clip handle it visually)
+    } else {
+      doc.rect(ML, y, TABLE_W, ROW_H, 'F');
+    }
+
+    // Column dividers
+    doc.setDrawColor(224, 224, 224);
+    doc.setLineWidth(0.3);
+    [COLS.vtg, COLS.region, COLS.p1, COLS.p3, COLS.dist].forEach(col => {
+      doc.line(col.x, y, col.x, y + ROW_H);
+    });
+
+    // Row bottom border
+    doc.setDrawColor(224, 224, 224);
+    doc.setLineWidth(0.3);
+    if (!isLast) doc.line(ML, y + ROW_H, ML + TABLE_W, y + ROW_H);
+
+    const textY = y + 14;
+    const pad   = 5;
+
+    // Wine: brand
+    doc.setFont('times', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(10, 10, 10);
+    const brand = String(p.brand || '—');
+    doc.text(brand, COLS.wine.x + pad, textY, { maxWidth: COLS.wine.w - pad * 2 });
+
+    // Wine: name
+    doc.setFont('times', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(30, 30, 30);
+    const name = String(p.name || '');
+    if (name) doc.text(name, COLS.wine.x + pad, textY + 11, { maxWidth: COLS.wine.w - pad * 2 });
+
+    // Varietal
+    if (p.varietals) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(153, 153, 153);
+      doc.text(String(p.varietals), COLS.wine.x + pad, textY + 21, { maxWidth: COLS.wine.w - pad * 2 });
+    }
+
+    // Vintage
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(10, 10, 10);
+    const vtg = fmtVtg(p.vintage);
+    doc.text(vtg, COLS.vtg.x + COLS.vtg.w / 2, textY + 5, { align: 'center' });
+
+    // Region
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(10, 10, 10);
+    doc.text(String(p.region || '—'), COLS.region.x + pad, textY, { maxWidth: COLS.region.w - pad * 2 });
+    if (p.appellation) {
+      doc.setFontSize(6.5);
+      doc.setTextColor(153, 153, 153);
+      doc.text(String(p.appellation), COLS.region.x + pad, textY + 10, { maxWidth: COLS.region.w - pad * 2 });
+    }
+
+    // Price 1cs
+    const b1 = fmtBottle(p.price_1cs);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(10, 10, 10);
+    doc.text(b1, COLS.p1.x + COLS.p1.w / 2, textY + 5, { align: 'center' });
+    if (p.price_1cs) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(153, 153, 153);
+      doc.text(`(${fmtCase(p.price_1cs)} cs)`, COLS.p1.x + COLS.p1.w / 2, textY + 16, { align: 'center' });
+    }
+
+    // Price 3cs
+    const b3 = fmtBottle(p.price_3cs);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(10, 10, 10);
+    doc.text(b3, COLS.p3.x + COLS.p3.w / 2, textY + 5, { align: 'center' });
+    if (p.price_3cs) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(153, 153, 153);
+      doc.text(`(${fmtCase(p.price_3cs)} cs)`, COLS.p3.x + COLS.p3.w / 2, textY + 16, { align: 'center' });
+    }
+
+    // Distributor
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(119, 119, 119);
+    doc.text(String(p.distributor || '—'), COLS.dist.x + pad, textY + 5, { maxWidth: COLS.dist.w - pad * 2 });
+  }
+
+  function drawFooter(doc, pageNum, totalPages) {
+    const footerY = PH - 22;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(ML, footerY - 6, PW - MR, footerY - 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(153, 153, 153);
+    doc.text('Prices subject to change. For trade use only. All pricing in USD.', ML, footerY);
+    doc.text(`Page ${pageNum} of ${totalPages}`, PW - MR, footerY, { align: 'right' });
+  }
+
+  function drawTableBorder(doc, rowCount) {
+    const tableH = HEAD_H + rowCount * ROW_H;
+    doc.setDrawColor(187, 187, 187);
+    doc.setLineWidth(0.75);
+    doc.roundedRect(ML, HEAD_Y, TABLE_W, tableH, TABLE_R, TABLE_R, 'S');
+  }
+
+  // ── Generate pages ──
+  for (let pg = 0; pg < totalPages; pg++) {
+    if (pg > 0) doc.addPage();
+    const slice = selected.slice(pg * perPage, pg * perPage + perPage);
+
+    drawPageHeader(doc, pg + 1);
+    drawTableHeader(doc);
+    slice.forEach((p, i) => drawRow(doc, p, i, i === slice.length - 1));
+    drawTableBorder(doc, slice.length);
+    drawFooter(doc, pg + 1, totalPages);
+  }
+
+  doc.save(`pour-advice-sell-sheet-${filenameDateLabel()}.pdf`);
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
+function App() {
+  const [products,  setProducts]  = useState([]);
+  const [selected,  setSelected]  = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        if (!SUPABASE_URL || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+          setError('Add your SUPABASE_URL and SUPABASE_ANON_KEY at the top of this file.');
+          setLoading(false);
+          return;
+        }
+        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { data, error: sbErr } = await client
+          .from('products')
+          .select('id, vintage, brand, name, region, appellation, varietals, price_1cs, price_3cs, distributor')
+          .eq('active', true)
+          .order('brand', { ascending: true });
+        if (sbErr) throw sbErr;
+        setProducts(data || []);
+      } catch (err) {
+        setError('Failed to load products: ' + (err.message || String(err)));
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProducts();
+  }, []);
+
+  const selectedIds = new Set(selected.map(p => p.id));
+
+  function toggleProduct(p) {
+    if (selectedIds.has(p.id)) {
+      setSelected(prev => prev.filter(s => s.id !== p.id));
+    } else {
+      setSelected(prev => [...prev, p]);
+    }
+  }
+
+  const perPage   = 6;
+  const pageCount = Math.ceil(selected.length / perPage) || 1;
+  const pages     = Array.from({ length: pageCount }, (_, i) =>
+    selected.slice(i * perPage, i * perPage + perPage)
+  );
+
+  return (
+    <div className="page-wrap">
+      {/* App header */}
+      <div className="app-header">
+        <div className="app-wordmark">Pour Advice</div>
+        <div className="app-tagline">Wine &amp; Beverage Brokerage</div>
+      </div>
+      <div className="app-subtitle">Sell Sheet Generator</div>
+
+      {/* Error bar */}
+      {error && <div className="error-bar">{error}</div>}
+
+      {/* Two panels */}
+      <div className="panels-row">
+        <ProductSelector
+          products={products}
+          selectedIds={selectedIds}
+          onToggle={toggleProduct}
+          loading={loading}
+          error={null}
+        />
+        <SelectedPanel
+          selected={selected}
+          setSelected={setSelected}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="actions-row">
+        <button
+          className="btn btn-primary"
+          disabled={selected.length === 0}
+          onClick={() => generatePDF(selected)}
+        >
+          ↓ Download PDF
+        </button>
+        {selected.length > 0 && (
+          <button
+            className="btn btn-secondary"
+            onClick={() => setSelected([])}
+          >
+            Clear All
+          </button>
+        )}
+        {selected.length > 0 && (
+          <span style={{fontSize:'.78rem', color:'var(--label)'}}>
+            {selected.length} product{selected.length !== 1 ? 's' : ''} · {pageCount} page{pageCount !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+
+      {/* Live preview */}
+      <div className="preview-section">
+        <div className="preview-header">
+          <span className="panel-title">Live Preview</span>
+          {selected.length === 0 && (
+            <span style={{fontSize:'.72rem', color:'var(--sub)', fontStyle:'italic'}}>
+              Select products to preview the sell sheet
+            </span>
+          )}
+        </div>
+        <div className="preview-body">
+          {selected.length === 0 ? (
+            <div style={{textAlign:'center', padding:'3rem 1rem', color:'var(--sub)', fontStyle:'italic', fontSize:'.85rem'}}>
+              No products selected.
+            </div>
+          ) : (
+            pages.map((pageProducts, i) => (
+              <SheetPage
+                key={i}
+                products={pageProducts}
+                pageNum={i + 1}
+                totalPages={pageCount}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
