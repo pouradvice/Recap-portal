@@ -72,7 +72,6 @@
     .product-info { min-width: 0; }
     .product-brand { font-family: 'Playfair Display', serif; font-size: .82rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .product-name-small { font-size: .75rem; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .product-vintage-tag { margin-left: auto; font-size: .7rem; color: var(--sub); flex-shrink: 0; padding-left: .4rem; }
 
     /* Empty state */
     .empty-state { padding: 2rem 1rem; text-align: center; color: var(--sub); font-size: .82rem; font-style: italic; }
@@ -271,8 +270,8 @@ function ProductSelector({ products, selectedIds, onToggle, loading, error }) {
   const filtered = products.filter(p => {
     if (!query.trim()) return true;
     const q = query.toLowerCase();
-    return (p.brand || '').toLowerCase().includes(q) ||
-           (p.name  || '').toLowerCase().includes(q);
+    return (p.brand_name || '').toLowerCase().includes(q) ||
+           (p.wine_name  || '').toLowerCase().includes(q);
   });
 
   return (
@@ -312,10 +311,9 @@ function ProductSelector({ products, selectedIds, onToggle, loading, error }) {
                 {isSel && <span className="check-icon">✓</span>}
               </div>
               <div className="product-info">
-                <div className="product-brand">{p.brand || '—'}</div>
-                <div className="product-name-small">{p.name || '—'}</div>
+                <div className="product-brand">{p.brand_name || '—'}</div>
+                <div className="product-name-small">{p.wine_name || '—'}</div>
               </div>
-              <span className="product-vintage-tag">{p.vintage ? `'${fmtVtg(p.vintage)}` : 'NV'}</span>
             </div>
           );
         })}
@@ -369,9 +367,8 @@ function SelectedPanel({ selected, setSelected }) {
           >
             <span className="drag-handle">⠿</span>
             <div className="sel-card-info">
-              <div className="sel-card-brand">{p.brand || '—'}</div>
-              <div className="sel-card-name">{p.name || '—'}</div>
-              <div className="sel-card-vtg">{p.vintage || 'NV'}</div>
+              <div className="sel-card-brand">{p.brand_name || '—'}</div>
+              <div className="sel-card-name">{p.wine_name || '—'}</div>
             </div>
             <button className="remove-btn" onClick={() => remove(p.id)} title="Remove">✕</button>
           </div>
@@ -415,38 +412,39 @@ function SheetPage({ products, pageNum, totalPages }) {
         <table className="sheet-table">
           <thead>
             <tr>
-              <th style={{width:'30%'}}>Wine</th>
-              <th className="center" style={{width:'6%'}}>Vtg</th>
-              <th style={{width:'18%'}}>Region / Appellation</th>
+              <th style={{width:'32%'}}>Wine</th>
+              <th style={{width:'20%'}}>Region / Appellation</th>
               <th style={{width:'14%'}}>1 Bottle</th>
               <th style={{width:'14%'}}>3+ / BTG</th>
-              <th style={{width:'18%'}}>Distributor</th>
+              <th style={{width:'20%'}}>Distributor</th>
             </tr>
           </thead>
           <tbody>
-            {products.map((p, i) => (
-              <tr key={p.id}>
-                <td>
-                  <div className="td-wine-brand">{p.brand || '—'}</div>
-                  <div className="td-wine-name">{p.name || ''}</div>
-                  {p.varietals && <div className="td-varietal">{p.varietals}</div>}
-                </td>
-                <td className="td-vtg">{fmtVtg(p.vintage)}</td>
-                <td>
-                  <div style={{fontSize:'.75rem',color:'var(--ink)'}}>{p.region || '—'}</div>
-                  {p.appellation && <div style={{fontSize:'.67rem',color:'var(--sub)'}}>{p.appellation}</div>}
-                </td>
-                <td>
-                  <div className="td-price-main">{fmtBottle(p.price_1cs)}</div>
-                  {p.price_1cs && <div className="td-price-case">({fmtCase(p.price_1cs)} cs)</div>}
-                </td>
-                <td>
-                  <div className="td-price-main">{fmtBottle(p.price_3cs)}</div>
-                  {p.price_3cs && <div className="td-price-case">({fmtCase(p.price_3cs)} cs)</div>}
-                </td>
-                <td className="td-distributor">{p.distributor || '—'}</td>
-              </tr>
-            ))}
+            {products.map((p, i) => {
+              const varietalStr = Array.isArray(p.varietals) ? p.varietals.join(', ') : (p.varietals || '');
+              return (
+                <tr key={p.id}>
+                  <td>
+                    <div className="td-wine-brand">{p.brand_name || '—'}</div>
+                    <div className="td-wine-name">{p.wine_name || ''}</div>
+                    {varietalStr && <div className="td-varietal">{varietalStr}</div>}
+                  </td>
+                  <td>
+                    <div style={{fontSize:'.75rem',color:'var(--ink)'}}>{p.region || '—'}</div>
+                    {p.appellation && <div style={{fontSize:'.67rem',color:'var(--sub)'}}>{p.appellation}</div>}
+                  </td>
+                  <td>
+                    <div className="td-price-main">{fmtBottle(p.frontline)}</div>
+                    {p.frontline && <div className="td-price-case">({fmtCase(p.frontline)} cs)</div>}
+                  </td>
+                  <td>
+                    <div className="td-price-main">{fmtBottle(p.btg_3cs_cost)}</div>
+                    {p.btg_3cs_cost && <div className="td-price-case">({fmtCase(p.btg_3cs_cost)} cs)</div>}
+                  </td>
+                  <td className="td-distributor">{p.distributor || '—'}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -476,12 +474,11 @@ function generatePDF(selected) {
   const dateLabel  = currentMonthLabel();
 
   const COLS = {
-    wine:   { x: ML,          w: 210 },
-    vtg:    { x: ML + 210,    w:  44 },
-    region: { x: ML + 254,    w: 140 },
-    p1:     { x: ML + 394,    w: 100 },
-    p3:     { x: ML + 494,    w: 100 },
-    dist:   { x: ML + 594,    w: PW - ML - MR - 594 },
+    wine:   { x: ML,          w: 220 },
+    region: { x: ML + 220,    w: 160 },
+    p1:     { x: ML + 380,    w: 110 },
+    p3:     { x: ML + 490,    w: 110 },
+    dist:   { x: ML + 600,    w: PW - ML - MR - 600 },
   };
 
   const ROW_H   = 52;
@@ -537,12 +534,11 @@ function generatePDF(selected) {
     doc.setTextColor(255, 255, 255);
     const labelY = HEAD_Y + HEAD_H / 2 + 2.5;
     const headers = [
-      { label: 'WINE',               cx: COLS.wine.x   + COLS.wine.w / 2   },
-      { label: 'VTG',                cx: COLS.vtg.x    + COLS.vtg.w / 2    },
+      { label: 'WINE',                 cx: COLS.wine.x   + COLS.wine.w / 2   },
       { label: 'REGION / APPELLATION', cx: COLS.region.x + COLS.region.w / 2 },
-      { label: '1 BOTTLE',           cx: COLS.p1.x     + COLS.p1.w / 2     },
-      { label: '3+ / BTG',           cx: COLS.p3.x     + COLS.p3.w / 2     },
-      { label: 'DISTRIBUTOR',        cx: COLS.dist.x   + COLS.dist.w / 2   },
+      { label: '1 BOTTLE',             cx: COLS.p1.x     + COLS.p1.w / 2     },
+      { label: '3+ / BTG',             cx: COLS.p3.x     + COLS.p3.w / 2     },
+      { label: 'DISTRIBUTOR',          cx: COLS.dist.x   + COLS.dist.w / 2   },
     ];
     headers.forEach(h => doc.text(h.label, h.cx, labelY, { align: 'center' }));
   }
@@ -565,7 +561,7 @@ function generatePDF(selected) {
     // Column dividers
     doc.setDrawColor(224, 224, 224);
     doc.setLineWidth(0.3);
-    [COLS.vtg, COLS.region, COLS.p1, COLS.p3, COLS.dist].forEach(col => {
+    [COLS.region, COLS.p1, COLS.p3, COLS.dist].forEach(col => {
       doc.line(col.x, y, col.x, y + ROW_H);
     });
 
@@ -581,30 +577,24 @@ function generatePDF(selected) {
     doc.setFont('times', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(10, 10, 10);
-    const brand = String(p.brand || '—');
+    const brand = String(p.brand_name || '—');
     doc.text(brand, COLS.wine.x + pad, textY, { maxWidth: COLS.wine.w - pad * 2 });
 
     // Wine: name
     doc.setFont('times', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(30, 30, 30);
-    const name = String(p.name || '');
-    if (name) doc.text(name, COLS.wine.x + pad, textY + 11, { maxWidth: COLS.wine.w - pad * 2 });
+    const wineName = String(p.wine_name || '');
+    if (wineName) doc.text(wineName, COLS.wine.x + pad, textY + 11, { maxWidth: COLS.wine.w - pad * 2 });
 
     // Varietal
-    if (p.varietals) {
+    const varietalStr = Array.isArray(p.varietals) ? p.varietals.join(', ') : (p.varietals || '');
+    if (varietalStr) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6.5);
       doc.setTextColor(153, 153, 153);
-      doc.text(String(p.varietals), COLS.wine.x + pad, textY + 21, { maxWidth: COLS.wine.w - pad * 2 });
+      doc.text(varietalStr, COLS.wine.x + pad, textY + 21, { maxWidth: COLS.wine.w - pad * 2 });
     }
-
-    // Vintage
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(10, 10, 10);
-    const vtg = fmtVtg(p.vintage);
-    doc.text(vtg, COLS.vtg.x + COLS.vtg.w / 2, textY + 5, { align: 'center' });
 
     // Region
     doc.setFont('helvetica', 'normal');
@@ -617,30 +607,30 @@ function generatePDF(selected) {
       doc.text(String(p.appellation), COLS.region.x + pad, textY + 10, { maxWidth: COLS.region.w - pad * 2 });
     }
 
-    // Price 1cs
-    const b1 = fmtBottle(p.price_1cs);
+    // Price frontline (1cs)
+    const b1 = fmtBottle(p.frontline);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(10, 10, 10);
     doc.text(b1, COLS.p1.x + COLS.p1.w / 2, textY + 5, { align: 'center' });
-    if (p.price_1cs) {
+    if (p.frontline) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6.5);
       doc.setTextColor(153, 153, 153);
-      doc.text(`(${fmtCase(p.price_1cs)} cs)`, COLS.p1.x + COLS.p1.w / 2, textY + 16, { align: 'center' });
+      doc.text(`(${fmtCase(p.frontline)} cs)`, COLS.p1.x + COLS.p1.w / 2, textY + 16, { align: 'center' });
     }
 
-    // Price 3cs
-    const b3 = fmtBottle(p.price_3cs);
+    // Price 3cs / BTG
+    const b3 = fmtBottle(p.btg_3cs_cost);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(10, 10, 10);
     doc.text(b3, COLS.p3.x + COLS.p3.w / 2, textY + 5, { align: 'center' });
-    if (p.price_3cs) {
+    if (p.btg_3cs_cost) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6.5);
       doc.setTextColor(153, 153, 153);
-      doc.text(`(${fmtCase(p.price_3cs)} cs)`, COLS.p3.x + COLS.p3.w / 2, textY + 16, { align: 'center' });
+      doc.text(`(${fmtCase(p.btg_3cs_cost)} cs)`, COLS.p3.x + COLS.p3.w / 2, textY + 16, { align: 'center' });
     }
 
     // Distributor
@@ -702,9 +692,9 @@ function App() {
         const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const { data, error: sbErr } = await client
           .from('products')
-          .select('id, vintage, brand, name, region, appellation, varietals, price_1cs, price_3cs, distributor')
-          .eq('active', true)
-          .order('brand', { ascending: true });
+          .select('id, brand_name, wine_name, region, appellation, varietals, frontline, btg_3cs_cost, distributor')
+          .eq('is_active', true)
+          .order('brand_name', { ascending: true });
         if (sbErr) throw sbErr;
         setProducts(data || []);
       } catch (err) {
